@@ -35,6 +35,7 @@ export default async function InvitationsPage() {
 
   return (
     <InvitationForm
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       invitations={(invitations.data as any) ?? []}
       departments={departments.data ?? []}
       jobLevels={jobLevels.data ?? []}

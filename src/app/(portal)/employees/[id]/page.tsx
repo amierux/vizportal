@@ -28,6 +28,7 @@ export default async function EmployeeDetailPage({
     .select("roles(name)")
     .eq("profile_id", user.id);
   const roles: RoleName[] = (currentUserRoles ?? []).map(
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (ur: any) => ur.roles.name
   );
 

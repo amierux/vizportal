@@ -29,7 +29,7 @@ export async function getCompany() {
   return company;
 }
 
-export async function updateCompany(_prevState: any, formData: FormData) {
+export async function updateCompany(_prevState: unknown, formData: FormData) {
   const supabase = await createClient();
 
   const parsed = companySchema.safeParse({

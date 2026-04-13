@@ -299,7 +299,7 @@ export type Database = {
         Relationships: [];
       };
     };
-    Views: {};
+    Views: Record<string, never>;
     Functions: {
       get_user_company_id: {
         Args: Record<string, never>;

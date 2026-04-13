@@ -16,7 +16,7 @@ export async function getJobLevels() {
   return data ?? [];
 }
 
-export async function createJobLevel(_prevState: any, formData: FormData) {
+export async function createJobLevel(_prevState: unknown, formData: FormData) {
   const supabase = await createClient();
   const parsed = jobLevelSchema.safeParse({
     code: formData.get("code"),

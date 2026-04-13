@@ -77,7 +77,7 @@ export async function getEmployee(id: string) {
   return data;
 }
 
-export async function updateEmployee(_prevState: any, formData: FormData) {
+export async function updateEmployee(_prevState: unknown, formData: FormData) {
   const supabase = await createClient();
 
   const profileId = formData.get("_profileId") as string;
@@ -119,7 +119,7 @@ export async function updateEmployee(_prevState: any, formData: FormData) {
   return { success: true };
 }
 
-export async function updateOwnProfile(_prevState: any, formData: FormData) {
+export async function updateOwnProfile(_prevState: unknown, formData: FormData) {
   const supabase = await createClient();
 
   const {

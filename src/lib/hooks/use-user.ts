@@ -42,6 +42,7 @@ export function useUser() {
         .eq("profile_id", user.id);
 
       const roles = (userRoles ?? []).map(
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         (ur: any) => ur.roles.name as RoleName
       );
 

@@ -171,7 +171,7 @@ export function EmploymentTab({
               <Label>{field.label}</Label>
               <Input
                 name={canEdit ? field.name : undefined}
-                defaultValue={(data as any)[field.name] ?? ""}
+                defaultValue={(data as Record<string, unknown>)[field.name] as string ?? ""}
                 readOnly={!canEdit}
                 className={!canEdit ? "bg-muted" : ""}
               />

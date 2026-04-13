@@ -70,6 +70,7 @@ export default async function EmployeesPage({
   return (
     <div>
       <EmployeeTable
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         employees={(employees as any) ?? []}
         totalCount={count ?? 0}
         page={page}
