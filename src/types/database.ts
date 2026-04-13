@@ -27,6 +27,7 @@ export type Database = {
           business_manager_id?: string | null;
           director_id?: string | null;
         };
+        Relationships: [];
       };
       profiles: {
         Row: {
@@ -60,6 +61,7 @@ export type Database = {
           is_active?: boolean;
           profile_completed?: boolean;
         };
+        Relationships: [];
       };
       roles: {
         Row: {
@@ -78,6 +80,7 @@ export type Database = {
           name?: string;
           description?: string | null;
         };
+        Relationships: [];
       };
       user_roles: {
         Row: {
@@ -95,6 +98,7 @@ export type Database = {
           profile_id?: string;
           role_id?: string;
         };
+        Relationships: [];
       };
       departments: {
         Row: {
@@ -118,6 +122,7 @@ export type Database = {
           manager_id?: string | null;
           team_leader_id?: string | null;
         };
+        Relationships: [];
       };
       job_levels: {
         Row: {
@@ -140,6 +145,7 @@ export type Database = {
           name?: string;
           rank?: number;
         };
+        Relationships: [];
       };
       employee_details: {
         Row: {
@@ -228,6 +234,7 @@ export type Database = {
           date_regularized?: string | null;
           employment_status?: "probationary" | "regular" | "resigned" | "terminated";
         };
+        Relationships: [];
       };
       employee_documents: {
         Row: {
@@ -255,6 +262,7 @@ export type Database = {
           file_name?: string;
           file_url?: string;
         };
+        Relationships: [];
       };
       invitations: {
         Row: {
@@ -288,8 +296,10 @@ export type Database = {
           expires_at?: string;
           accepted_at?: string | null;
         };
+        Relationships: [];
       };
     };
+    Views: {};
     Functions: {
       get_user_company_id: {
         Args: Record<string, never>;
