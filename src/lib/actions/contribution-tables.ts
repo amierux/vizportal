@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 
-export async function getContributionTables(type: string, year: number) {
+export async function getContributionTables(type: "sss" | "philhealth" | "pagibig", year: number) {
   const supabase = await createClient();
   const { data } = await supabase
     .from("ph_contribution_tables")
@@ -14,7 +14,7 @@ export async function getContributionTables(type: string, year: number) {
   return data ?? [];
 }
 
-export async function getTaxBrackets(frequency: string, year: number) {
+export async function getTaxBrackets(frequency: "monthly" | "semi_monthly" | "weekly", year: number) {
   const supabase = await createClient();
   const { data } = await supabase
     .from("ph_tax_brackets")

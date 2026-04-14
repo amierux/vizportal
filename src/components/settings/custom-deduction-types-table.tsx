@@ -2,7 +2,8 @@
 
 import { useActionState, useEffect, useState } from "react";
 import { createCustomDeductionType, toggleCustomDeductionType } from "@/lib/actions/payroll-settings";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
@@ -25,6 +26,7 @@ export function CustomDeductionTypesTable({ types }: CustomDeductionTypesTablePr
   useEffect(() => {
     if (state && "success" in state) {
       toast.success("Deduction type created");
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setIsOpen(false);
     }
     if (state && "error" in state) toast.error(state.error as string);
@@ -50,10 +52,8 @@ export function CustomDeductionTypesTable({ types }: CustomDeductionTypesTablePr
             </div>
           </div>
           <Dialog open={isOpen} onOpenChange={setIsOpen}>
-            <DialogTrigger asChild>
-              <Button size="sm">
-                <Plus className="mr-2 h-4 w-4" /> Add Type
-              </Button>
+            <DialogTrigger className={cn(buttonVariants({ size: "sm" }))}>
+              <Plus className="mr-2 h-4 w-4" /> Add Type
             </DialogTrigger>
             <DialogContent>
               <DialogHeader>

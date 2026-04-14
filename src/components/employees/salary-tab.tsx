@@ -21,6 +21,8 @@ import {
 } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Switch } from "@/components/ui/switch";
+import { buttonVariants } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import { Plus, Banknote, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
 
@@ -81,6 +83,7 @@ export function SalaryTab({
   useEffect(() => {
     if (addState && "success" in addState) {
       toast.success("Recurring deduction added");
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setIsAddOpen(false);
     }
     if (addState && "error" in addState) toast.error(addState.error as string);
@@ -229,10 +232,11 @@ export function SalaryTab({
           <div className="flex items-center justify-between">
             <CardTitle className="text-base">Recurring Deductions</CardTitle>
             <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
-              <DialogTrigger asChild>
-                <Button size="sm" disabled={activeDeductionTypes.length === 0}>
-                  <Plus className="mr-2 h-4 w-4" /> Add Deduction
-                </Button>
+              <DialogTrigger
+                className={cn(buttonVariants({ size: "sm" }))}
+                disabled={activeDeductionTypes.length === 0}
+              >
+                <Plus className="mr-2 h-4 w-4" /> Add Deduction
               </DialogTrigger>
               <DialogContent>
                 <DialogHeader>

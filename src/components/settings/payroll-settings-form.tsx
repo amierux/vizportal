@@ -24,7 +24,7 @@ type PayrollSettingsFormProps = {
 
 export function PayrollSettingsForm({ settings }: PayrollSettingsFormProps) {
   const [state, formAction, isPending] = useActionState(updatePayrollSettings, null);
-  const [scheduleType, setScheduleType] = useState(settings?.schedule_type ?? "semi_monthly");
+  const [scheduleType, setScheduleType] = useState<"monthly" | "semi_monthly" | "weekly">(settings?.schedule_type ?? "semi_monthly");
 
   // Controlled state for toggles (needed to submit as hidden inputs)
   const [isEnabled, setIsEnabled] = useState(settings?.is_enabled ?? true);
@@ -62,7 +62,7 @@ export function PayrollSettingsForm({ settings }: PayrollSettingsFormProps) {
             <Select
               name="schedule_type"
               defaultValue={scheduleType}
-              onValueChange={setScheduleType}
+              onValueChange={(value) => { if (value) setScheduleType(value as "monthly" | "semi_monthly" | "weekly"); }}
             >
               <SelectTrigger id="schedule_type">
                 <SelectValue />

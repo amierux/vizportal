@@ -25,7 +25,7 @@ export async function updatePayrollSettings(_prevState: unknown, formData: FormD
   if (!profile) return { error: "Profile not found" };
 
   const data = {
-    schedule_type: formData.get("schedule_type") as string,
+    schedule_type: formData.get("schedule_type") as "monthly" | "semi_monthly" | "weekly",
     pay_day_1: Number(formData.get("pay_day_1")),
     pay_day_2: formData.get("pay_day_2") ? Number(formData.get("pay_day_2")) : null,
     cutoff_days_before: Number(formData.get("cutoff_days_before") || 5),
