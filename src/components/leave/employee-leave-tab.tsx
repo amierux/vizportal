@@ -4,6 +4,7 @@ import { useState } from "react";
 import {
   allocateLeaveBalance,
   allocateAllLeaveBalances,
+  toggleLeaveBalanceDisabled,
 } from "@/lib/actions/leave";
 import {
   Table,
@@ -53,6 +54,12 @@ export function EmployeeLeaveTab({ profileId, balances }: EmployeeLeaveTabProps)
     setLoading(null);
   }
 
+  async function handleToggleDisabled(balanceId: string, currentDisabled: boolean) {
+    const result = await toggleLeaveBalanceDisabled(balanceId, !currentDisabled);
+    if ("error" in result) toast.error(result.error);
+    else toast.success(currentDisabled ? "Leave type enabled" : "Leave type disabled");
+  }
+
   async function handleAllocateAll() {
     setBulkLoading(true);
     const result = await allocateAllLeaveBalances(profileId);
@@ -89,6 +96,7 @@ export function EmployeeLeaveTab({ profileId, balances }: EmployeeLeaveTabProps)
               <TableHead className="text-right">Total</TableHead>
               <TableHead className="text-right">Used</TableHead>
               <TableHead className="text-right">Remaining</TableHead>
+              <TableHead>Status</TableHead>
               <TableHead></TableHead>
             </TableRow>
           </TableHeader>
@@ -111,6 +119,15 @@ export function EmployeeLeaveTab({ profileId, balances }: EmployeeLeaveTabProps)
                       {row.balance.remaining_days}
                     </TableCell>
                     <TableCell>
+                      <Badge
+                        variant={row.balance!.is_disabled ? "destructive" : "default"}
+                        className="cursor-pointer"
+                        onClick={() => handleToggleDisabled(row.balance!.id, row.balance!.is_disabled)}
+                      >
+                        {row.balance!.is_disabled ? "Disabled" : "Enabled"}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
                       <Button
                         variant="ghost"
                         size="icon"
@@ -131,7 +148,7 @@ export function EmployeeLeaveTab({ profileId, balances }: EmployeeLeaveTabProps)
                   </>
                 ) : (
                   <>
-                    <TableCell colSpan={3} className="text-center text-muted-foreground">
+                    <TableCell colSpan={4} className="text-center text-muted-foreground">
                       Not allocated
                     </TableCell>
                     <TableCell>

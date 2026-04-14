@@ -490,6 +490,7 @@ export type Database = {
           used_days: number;
           remaining_days: number;
           carried_over_days: number;
+          is_disabled: boolean;
           created_at: string;
           updated_at: string;
         };
@@ -503,12 +504,14 @@ export type Database = {
           used_days?: number;
           remaining_days: number;
           carried_over_days?: number;
+          is_disabled?: boolean;
         };
         Update: {
           total_days?: number;
           used_days?: number;
           remaining_days?: number;
           carried_over_days?: number;
+          is_disabled?: boolean;
         };
         Relationships: [];
       };

@@ -159,6 +159,7 @@ export async function getMyLeaveBalances() {
     .select("*, leave_types(name, code, is_paid)")
     .eq("profile_id", user.id)
     .eq("year", year)
+    .eq("is_disabled", false)
     .order("leave_types(name)");
 
   return data ?? [];
@@ -511,4 +512,25 @@ export async function allocateAllLeaveBalances(profileId: string) {
 
   revalidatePath(`/employees/${profileId}`);
   return { success: true, allocated };
+}
+
+/**
+ * Toggle a leave balance's disabled status for an employee.
+ * When disabled, the leave type won't appear in the employee's leave request form.
+ */
+export async function toggleLeaveBalanceDisabled(
+  balanceId: string,
+  isDisabled: boolean
+) {
+  const supabase = await createClient();
+
+  const { error } = await supabase
+    .from("leave_balances")
+    .update({ is_disabled: isDisabled })
+    .eq("id", balanceId);
+
+  if (error) return { error: "Failed to update balance" };
+
+  revalidatePath("/employees");
+  return { success: true };
 }
