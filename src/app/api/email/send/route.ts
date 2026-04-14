@@ -1,9 +1,11 @@
 import { NextResponse } from "next/server";
 import { sendEmail } from "@/lib/utils/email";
+import { getSystemSetting } from "@/lib/utils/settings";
 
 export async function POST(request: Request) {
   const authHeader = request.headers.get("authorization");
-  if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+  const cronSecret = await getSystemSetting("cron_secret");
+  if (!cronSecret || authHeader !== `Bearer ${cronSecret}`) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

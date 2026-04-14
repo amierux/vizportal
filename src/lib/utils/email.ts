@@ -1,4 +1,5 @@
 import { Resend } from "resend";
+import { getSystemSetting } from "@/lib/utils/settings";
 
 type SendEmailParams = {
   to: string;
@@ -7,16 +8,21 @@ type SendEmailParams = {
 };
 
 export async function sendEmail({ to, subject, html }: SendEmailParams) {
-  if (!process.env.RESEND_API_KEY) {
-    console.warn("RESEND_API_KEY not set — skipping email send");
+  const apiKey = await getSystemSetting("resend_api_key");
+
+  if (!apiKey) {
+    console.warn("Resend API key not configured — skipping email send");
     return { success: false, error: "Email not configured" };
   }
 
-  const resend = new Resend(process.env.RESEND_API_KEY);
+  const senderName = (await getSystemSetting("email_sender_name")) ?? "VizPortal";
+  const senderAddress = (await getSystemSetting("email_sender_address")) ?? "noreply@vizserve.com";
+
+  const resend = new Resend(apiKey);
 
   try {
     const { error } = await resend.emails.send({
-      from: "VizPortal <noreply@vizserve.com>",
+      from: `${senderName} <${senderAddress}>`,
       to,
       subject,
       html,

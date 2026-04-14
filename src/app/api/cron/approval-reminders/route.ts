@@ -3,6 +3,7 @@ import { createClient } from "@supabase/supabase-js";
 import { sendEmail, buildReminderEmail } from "@/lib/utils/email";
 import { formatFullName } from "@/lib/utils/format";
 import { APPROVAL_REMINDER_DAYS } from "@/lib/constants";
+import { getSystemSetting } from "@/lib/utils/settings";
 
 function createAdminClient() {
   return createClient(
@@ -13,7 +14,8 @@ function createAdminClient() {
 
 export async function GET(request: Request) {
   const authHeader = request.headers.get("authorization");
-  if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+  const cronSecret = await getSystemSetting("cron_secret");
+  if (!cronSecret || authHeader !== `Bearer ${cronSecret}`) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -70,7 +72,8 @@ export async function GET(request: Request) {
       (Date.now() - new Date(step.created_at).getTime()) / (1000 * 60 * 60 * 24)
     );
 
-    const approvalUrl = `${process.env.NEXT_PUBLIC_APP_URL ?? "https://vizportal.vercel.app"}/approvals/${step.token}`;
+    const appUrl = (await getSystemSetting("app_url")) ?? "https://vizportal.vercel.app";
+    const approvalUrl = `${appUrl}/approvals/${step.token}`;
     const email = buildReminderEmail({
       approverName,
       requesterName,

@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { sendEmail, buildApprovalEmail, buildStatusEmail } from "@/lib/utils/email";
 import { formatFullName } from "@/lib/utils/format";
+import { getSystemSetting } from "@/lib/utils/settings";
 
 /**
  * Create an approval request with TL → DM chain.
@@ -119,7 +120,8 @@ export async function createApprovalRequest(params: {
       .single();
 
     if (approver?.email) {
-      const approvalUrl = `${process.env.NEXT_PUBLIC_APP_URL ?? "https://vizportal.vercel.app"}/approvals/${firstStep.token}`;
+      const appUrl = (await getSystemSetting("app_url")) ?? "https://vizportal.vercel.app";
+      const approvalUrl = `${appUrl}/approvals/${firstStep.token}`;
       const email = buildApprovalEmail({
         requesterName,
         type: params.type,
@@ -250,7 +252,8 @@ export async function processApprovalDecision(
           .single();
 
         if (nextApprover?.email) {
-          const approvalUrl = `${process.env.NEXT_PUBLIC_APP_URL ?? "https://vizportal.vercel.app"}/approvals/${nextStep.token}`;
+          const appUrl = (await getSystemSetting("app_url")) ?? "https://vizportal.vercel.app";
+          const approvalUrl = `${appUrl}/approvals/${nextStep.token}`;
           const emailContent = buildApprovalEmail({
             requesterName,
             type: request.type,
