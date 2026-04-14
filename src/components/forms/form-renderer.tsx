@@ -6,8 +6,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Checkbox } from "@/components/ui/checkbox";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import {
   Select,
   SelectContent,
@@ -98,13 +96,12 @@ function FieldRenderer({
   field,
   value,
   onChange,
-  isRequired,
   error,
 }: {
   field: FormField;
   value: unknown;
   onChange: (val: unknown) => void;
-  isRequired: boolean;
+  isRequired?: boolean;
   error?: string;
 }) {
   const options = (field.options as string[]) ?? [];
@@ -184,16 +181,18 @@ function FieldRenderer({
         <div className="space-y-2">
           {options.map((opt) => (
             <div key={opt} className="flex items-center gap-2">
-              <Checkbox
+              <input
+                type="checkbox"
                 id={`${field.id}-${opt}`}
                 checked={selected.includes(opt)}
-                onCheckedChange={(checked) => {
-                  if (checked) {
+                onChange={(e) => {
+                  if (e.target.checked) {
                     onChange([...selected, opt]);
                   } else {
                     onChange(selected.filter((s) => s !== opt));
                   }
                 }}
+                className="h-4 w-4 rounded border-input accent-primary"
               />
               <Label htmlFor={`${field.id}-${opt}`} className="font-normal cursor-pointer">
                 {opt}
@@ -210,16 +209,18 @@ function FieldRenderer({
         <div className="space-y-2">
           {options.map((opt) => (
             <div key={opt} className="flex items-center gap-2">
-              <Checkbox
+              <input
+                type="checkbox"
                 id={`${field.id}-${opt}`}
                 checked={selected.includes(opt)}
-                onCheckedChange={(checked) => {
-                  if (checked) {
+                onChange={(e) => {
+                  if (e.target.checked) {
                     onChange([...selected, opt]);
                   } else {
                     onChange(selected.filter((s) => s !== opt));
                   }
                 }}
+                className="h-4 w-4 rounded border-input accent-primary"
               />
               <Label htmlFor={`${field.id}-${opt}`} className="font-normal cursor-pointer">
                 {opt}
@@ -232,16 +233,24 @@ function FieldRenderer({
 
     case "radio":
       return (
-        <RadioGroup value={(value as string) ?? ""} onValueChange={(v) => onChange(v)}>
+        <div className="space-y-2">
           {options.map((opt) => (
             <div key={opt} className="flex items-center gap-2">
-              <RadioGroupItem id={`${field.id}-${opt}`} value={opt} />
+              <input
+                type="radio"
+                id={`${field.id}-${opt}`}
+                name={field.id}
+                value={opt}
+                checked={(value as string) === opt}
+                onChange={() => onChange(opt)}
+                className="h-4 w-4 border-input accent-primary"
+              />
               <Label htmlFor={`${field.id}-${opt}`} className="font-normal cursor-pointer">
                 {opt}
               </Label>
             </div>
           ))}
-        </RadioGroup>
+        </div>
       );
 
     case "file":
@@ -311,8 +320,11 @@ export function FormRenderer({ form, isPublic = false, onSubmitSuccess }: FormRe
       }
 
       try {
-        // eslint-disable-next-line no-eval
-        const computed = String(eval(result));
+        // Safe arithmetic evaluation: only numbers, operators, parens, spaces
+        const sanitized = result.replace(/[^0-9+\-*/().\s]/g, "");
+        if (!sanitized.trim()) continue;
+        // Use Function constructor (safer than eval, still needs care)
+        const computed = String(new Function(`"use strict"; return (${sanitized})`)());
         if (computed !== String(next[field.id] ?? "")) {
           next[field.id] = computed;
           changed = true;
@@ -323,7 +335,8 @@ export function FormRenderer({ form, isPublic = false, onSubmitSuccess }: FormRe
     }
 
     if (changed) setData(next);
-  }, [data, allFields]); // eslint-disable-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [data]);
 
   // Field visibility
   function isFieldVisible(field: FormField): boolean {

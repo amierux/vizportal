@@ -71,6 +71,7 @@ export function FormListTable({ forms }: FormListTableProps) {
   useEffect(() => {
     if (state && "success" in state && "formId" in state) {
       toast.success("Form created");
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setOpen(false);
       router.push(`/forms/builder/${state.formId}`);
     }
@@ -179,10 +180,8 @@ export function FormListTable({ forms }: FormListTableProps) {
                     </TableCell>
                     <TableCell>
                       <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon" className="h-8 w-8" disabled={actionPending}>
-                            <MoreHorizontal className="h-4 w-4" />
-                          </Button>
+                        <DropdownMenuTrigger className={cn(buttonVariants({ variant: "ghost", size: "icon" }), "h-8 w-8")} disabled={actionPending}>
+                          <MoreHorizontal className="h-4 w-4" />
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
                           <DropdownMenuItem onClick={() => router.push(`/forms/builder/${form.id}`)}>
