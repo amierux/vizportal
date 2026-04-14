@@ -39,11 +39,19 @@ export default async function LeavePage() {
     .eq("company_id", profile!.company_id)
     .order("name");
 
+  const { data: activeProfiles } = await supabase
+    .from("profiles")
+    .select("id, first_name, last_name")
+    .eq("company_id", profile!.company_id)
+    .eq("is_active", true)
+    .neq("id", user!.id)
+    .order("first_name");
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">My Leave</h1>
-        <LeaveRequestForm leaveTypes={leaveTypes} />
+        <LeaveRequestForm leaveTypes={leaveTypes} users={activeProfiles ?? []} />
       </div>
 
       <div>

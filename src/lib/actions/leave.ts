@@ -100,10 +100,27 @@ export async function fileLeaveRequest(_prevState: unknown, formData: FormData) 
     return { error: "You have an overlapping approved leave for these dates" };
   }
 
-  // Attachment URL is uploaded client-side to storage; URL passed as hidden field
+  // Handle file attachment upload
   let attachmentUrl: string | null = null;
-  const attachmentField = formData.get("attachment_url") as string;
-  if (attachmentField) attachmentUrl = attachmentField;
+  const attachmentFile = formData.get("attachment") as File | null;
+  if (attachmentFile && attachmentFile.size > 0) {
+    const ext = attachmentFile.name.split(".").pop();
+    const fileId = crypto.randomUUID();
+    const path = `${profile.company_id}/leave/${user.id}/${fileId}.${ext}`;
+    const { error: uploadError } = await supabase.storage
+      .from("vizportal-storage")
+      .upload(path, attachmentFile);
+    if (!uploadError) {
+      const { data: urlData } = supabase.storage
+        .from("vizportal-storage")
+        .getPublicUrl(path);
+      attachmentUrl = urlData.publicUrl;
+    }
+  } else {
+    // Fall back to pre-uploaded URL if passed as hidden field
+    const attachmentField = formData.get("attachment_url") as string;
+    if (attachmentField) attachmentUrl = attachmentField;
+  }
 
   // Create leave request
   const { data: request, error: insertError } = await supabase
@@ -123,6 +140,21 @@ export async function fileLeaveRequest(_prevState: unknown, formData: FormData) 
 
   if (insertError || !request) return { error: "Failed to create leave request" };
 
+  // Create reliever records
+  const relieverIds: string[] = [];
+  for (let i = 0; i < 3; i++) {
+    const relieverId = formData.get(`reliever_id_${i}`) as string;
+    const relieverTasks = formData.get(`reliever_tasks_${i}`) as string;
+    if (relieverId && relieverTasks) {
+      await supabase.from("leave_request_relievers").insert({
+        leave_request_id: request.id,
+        reliever_id: relieverId,
+        tasks: relieverTasks,
+      });
+      relieverIds.push(relieverId);
+    }
+  }
+
   // Create approval request
   const approvalResult = await createApprovalRequest({
     companyId: profile.company_id,
@@ -133,6 +165,7 @@ export async function fileLeaveRequest(_prevState: unknown, formData: FormData) 
       <p><strong>Dates:</strong> ${parsed.data.start_date} to ${parsed.data.end_date}</p>
       <p><strong>Total Days:</strong> ${totalDays}</p>
       ${parsed.data.reason ? `<p><strong>Reason:</strong> ${parsed.data.reason}</p>` : ""}`,
+    relievers: relieverIds.length > 0 ? relieverIds : undefined,
   });
 
   if ("error" in approvalResult) return { error: approvalResult.error };
