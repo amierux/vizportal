@@ -19,6 +19,7 @@ function getPageTitle(pathname: string): string {
   const map: Record<string, string> = {
     "/dashboard": "Dashboard",
     "/company": "Company Info",
+    "/settings/company": "Company Settings",
     "/employees": "Employees",
     "/profile": "My Profile",
     "/settings": "Settings",

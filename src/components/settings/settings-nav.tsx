@@ -13,6 +13,7 @@ type NavItem = {
 };
 
 const SETTINGS_NAV: NavItem[] = [
+  { label: "Company", href: "/settings/company", roles: ["admin", "hr"] },
   { label: "Invitations", href: "/settings/invitations", roles: ["admin", "hr"] },
   { label: "Departments", href: "/settings/departments", roles: ["admin"] },
   { label: "Job Levels", href: "/settings/job-levels", roles: ["admin"] },

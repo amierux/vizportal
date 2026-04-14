@@ -4,7 +4,6 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
   LayoutDashboard,
-  Building2,
   Users,
   UserCircle,
   Settings,
@@ -38,7 +37,6 @@ type NavItem = {
 
 const NAV_ITEMS: NavItem[] = [
   { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard, roles: [] },
-  { label: "Company", href: "/company", icon: Building2, roles: ["admin", "hr"] },
   {
     label: "Employees",
     href: "/employees",
