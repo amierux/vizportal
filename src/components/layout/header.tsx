@@ -35,6 +35,7 @@ function getPageTitle(pathname: string): string {
     "/leave/manage": "Leave Management",
     "/leave/settings": "Leave Settings",
     "/approvals": "My Approvals",
+    "/settings/system": "System Configuration",
   };
   return map[pathname] ?? "VizPortal";
 }

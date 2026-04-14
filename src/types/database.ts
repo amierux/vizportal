@@ -607,6 +607,29 @@ export type Database = {
         };
         Relationships: [];
       };
+      system_settings: {
+        Row: {
+          id: string;
+          company_id: string;
+          key: string;
+          value: string;
+          is_secret: boolean;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          company_id: string;
+          key: string;
+          value: string;
+          is_secret?: boolean;
+        };
+        Update: {
+          value?: string;
+          is_secret?: boolean;
+        };
+        Relationships: [];
+      };
     };
     Views: Record<string, never>;
     Functions: {
