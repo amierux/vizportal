@@ -46,6 +46,24 @@ export async function GET(request: Request) {
 
     if (existing) continue;
 
+    // Check if today is a non-working day
+    const { data: nonWorkingDays } = await supabase
+      .from("non_working_days")
+      .select("date, is_recurring")
+      .eq("company_id", sched.company_id);
+
+    const todayDate = new Date(today);
+    const todayMonth = todayDate.getMonth() + 1;
+    const todayDayOfMonth = todayDate.getDate();
+
+    const isHoliday = (nonWorkingDays ?? []).some((nwd) => {
+      if (!nwd.is_recurring) return nwd.date === today;
+      const nwdDate = new Date(nwd.date);
+      return nwdDate.getMonth() + 1 === todayMonth && nwdDate.getDate() === todayDayOfMonth;
+    });
+
+    if (isHoliday) continue;
+
     // Check if on approved leave
     const { data: leaveReq } = await supabase
       .from("leave_requests")
