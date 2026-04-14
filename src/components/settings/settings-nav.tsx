@@ -21,6 +21,7 @@ const SETTINGS_NAV: NavItem[] = [
   { label: "Employees", href: "/settings/employees", roles: ["admin"] },
   { label: "Attendance", href: "/settings/attendance", roles: ["admin"] },
   { label: "Approval", href: "/settings/approval", roles: ["admin"] },
+  { label: "Payroll", href: "/settings/payroll", roles: ["admin"] },
   { label: "System", href: "/settings/system", roles: ["admin"] },
 ];
 

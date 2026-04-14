@@ -25,6 +25,14 @@ export type OvertimeRequest = Database["public"]["Tables"]["overtime_requests"][
 export type ApprovalConfig = Database["public"]["Tables"]["approval_configs"]["Row"];
 export type ApprovalConfigStep = Database["public"]["Tables"]["approval_config_steps"]["Row"];
 export type LeaveRequestReliever = Database["public"]["Tables"]["leave_request_relievers"]["Row"];
+export type PayrollSettings = Database["public"]["Tables"]["payroll_settings"]["Row"];
+export type PayrollPeriod = Database["public"]["Tables"]["payroll_periods"]["Row"];
+export type PayrollEntry = Database["public"]["Tables"]["payroll_entries"]["Row"];
+export type PayrollCustomDeduction = Database["public"]["Tables"]["payroll_custom_deductions"]["Row"];
+export type CustomDeductionType = Database["public"]["Tables"]["custom_deduction_types"]["Row"];
+export type RecurringDeduction = Database["public"]["Tables"]["recurring_deductions"]["Row"];
+export type PhContributionTable = Database["public"]["Tables"]["ph_contribution_tables"]["Row"];
+export type PhTaxBracket = Database["public"]["Tables"]["ph_tax_brackets"]["Row"];
 
 export type ApprovalType = "manual_clock" | "leave_request";
 export type AttendanceStatus = "present" | "late" | "absent" | "half_day" | "on_leave";

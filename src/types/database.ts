@@ -185,6 +185,8 @@ export type Database = {
           date_hired: string | null;
           date_regularized: string | null;
           employment_status: "probationary" | "regular" | "resigned" | "terminated";
+          bank_name: string | null;
+          bank_account_number: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -216,6 +218,8 @@ export type Database = {
           date_hired?: string | null;
           date_regularized?: string | null;
           employment_status?: "probationary" | "regular" | "resigned" | "terminated";
+          bank_name?: string | null;
+          bank_account_number?: string | null;
         };
         Update: {
           department_id?: string | null;
@@ -242,6 +246,8 @@ export type Database = {
           date_hired?: string | null;
           date_regularized?: string | null;
           employment_status?: "probationary" | "regular" | "resigned" | "terminated";
+          bank_name?: string | null;
+          bank_account_number?: string | null;
         };
         Relationships: [];
       };
@@ -766,6 +772,340 @@ export type Database = {
         };
         Update: {
           tasks?: string;
+        };
+        Relationships: [];
+      };
+      payroll_settings: {
+        Row: {
+          id: string;
+          company_id: string;
+          schedule_type: "monthly" | "semi_monthly" | "weekly";
+          pay_day_1: number;
+          pay_day_2: number | null;
+          cutoff_days_before: number;
+          is_enabled: boolean;
+          enable_late_deduction: boolean;
+          enable_undertime_deduction: boolean;
+          enable_absent_deduction: boolean;
+          ot_regular_multiplier: number;
+          ot_rest_day_multiplier: number;
+          ot_holiday_multiplier: number;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          company_id: string;
+          schedule_type?: "monthly" | "semi_monthly" | "weekly";
+          pay_day_1?: number;
+          pay_day_2?: number | null;
+          cutoff_days_before?: number;
+          is_enabled?: boolean;
+          enable_late_deduction?: boolean;
+          enable_undertime_deduction?: boolean;
+          enable_absent_deduction?: boolean;
+          ot_regular_multiplier?: number;
+          ot_rest_day_multiplier?: number;
+          ot_holiday_multiplier?: number;
+        };
+        Update: {
+          schedule_type?: "monthly" | "semi_monthly" | "weekly";
+          pay_day_1?: number;
+          pay_day_2?: number | null;
+          cutoff_days_before?: number;
+          is_enabled?: boolean;
+          enable_late_deduction?: boolean;
+          enable_undertime_deduction?: boolean;
+          enable_absent_deduction?: boolean;
+          ot_regular_multiplier?: number;
+          ot_rest_day_multiplier?: number;
+          ot_holiday_multiplier?: number;
+        };
+        Relationships: [];
+      };
+      payroll_periods: {
+        Row: {
+          id: string;
+          company_id: string;
+          start_date: string;
+          end_date: string;
+          pay_date: string;
+          status: "draft" | "processing" | "completed" | "cancelled";
+          processed_by: string | null;
+          processed_at: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          company_id: string;
+          start_date: string;
+          end_date: string;
+          pay_date: string;
+          status?: "draft" | "processing" | "completed" | "cancelled";
+          processed_by?: string | null;
+          processed_at?: string | null;
+        };
+        Update: {
+          start_date?: string;
+          end_date?: string;
+          pay_date?: string;
+          status?: "draft" | "processing" | "completed" | "cancelled";
+          processed_by?: string | null;
+          processed_at?: string | null;
+        };
+        Relationships: [];
+      };
+      payroll_entries: {
+        Row: {
+          id: string;
+          payroll_period_id: string;
+          profile_id: string;
+          company_id: string;
+          basic_salary: number;
+          daily_rate: number;
+          hourly_rate: number;
+          days_worked: number;
+          days_absent: number;
+          days_late: number;
+          late_minutes_total: number;
+          undertime_minutes_total: number;
+          ot_regular_hours: number;
+          ot_rest_day_hours: number;
+          ot_holiday_hours: number;
+          paid_leave_days: number;
+          unpaid_leave_days: number;
+          holiday_pay_days: number;
+          basic_pay: number;
+          ot_pay: number;
+          holiday_pay: number;
+          late_deduction: number;
+          undertime_deduction: number;
+          absent_deduction: number;
+          unpaid_leave_deduction: number;
+          gross_pay: number;
+          sss_contribution: number;
+          philhealth_contribution: number;
+          pagibig_contribution: number;
+          withholding_tax: number;
+          custom_deductions_total: number;
+          total_deductions: number;
+          net_pay: number;
+          bank_credited: boolean;
+          bank_credited_at: string | null;
+          bank_credited_by: string | null;
+          status: "draft" | "finalized";
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          payroll_period_id: string;
+          profile_id: string;
+          company_id: string;
+          basic_salary: number;
+          daily_rate: number;
+          hourly_rate: number;
+          days_worked?: number;
+          days_absent?: number;
+          days_late?: number;
+          late_minutes_total?: number;
+          undertime_minutes_total?: number;
+          ot_regular_hours?: number;
+          ot_rest_day_hours?: number;
+          ot_holiday_hours?: number;
+          paid_leave_days?: number;
+          unpaid_leave_days?: number;
+          holiday_pay_days?: number;
+          basic_pay: number;
+          ot_pay?: number;
+          holiday_pay?: number;
+          late_deduction?: number;
+          undertime_deduction?: number;
+          absent_deduction?: number;
+          unpaid_leave_deduction?: number;
+          gross_pay: number;
+          sss_contribution?: number;
+          philhealth_contribution?: number;
+          pagibig_contribution?: number;
+          withholding_tax?: number;
+          custom_deductions_total?: number;
+          total_deductions: number;
+          net_pay: number;
+          bank_credited?: boolean;
+          bank_credited_at?: string | null;
+          bank_credited_by?: string | null;
+          status?: "draft" | "finalized";
+        };
+        Update: {
+          days_worked?: number;
+          days_absent?: number;
+          days_late?: number;
+          late_minutes_total?: number;
+          undertime_minutes_total?: number;
+          ot_regular_hours?: number;
+          ot_rest_day_hours?: number;
+          ot_holiday_hours?: number;
+          paid_leave_days?: number;
+          unpaid_leave_days?: number;
+          holiday_pay_days?: number;
+          basic_pay?: number;
+          ot_pay?: number;
+          holiday_pay?: number;
+          late_deduction?: number;
+          undertime_deduction?: number;
+          absent_deduction?: number;
+          unpaid_leave_deduction?: number;
+          gross_pay?: number;
+          sss_contribution?: number;
+          philhealth_contribution?: number;
+          pagibig_contribution?: number;
+          withholding_tax?: number;
+          custom_deductions_total?: number;
+          total_deductions?: number;
+          net_pay?: number;
+          bank_credited?: boolean;
+          bank_credited_at?: string | null;
+          bank_credited_by?: string | null;
+          status?: "draft" | "finalized";
+        };
+        Relationships: [];
+      };
+      payroll_custom_deductions: {
+        Row: {
+          id: string;
+          payroll_entry_id: string;
+          name: string;
+          type: "deduction" | "adjustment";
+          amount: number;
+          notes: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          payroll_entry_id: string;
+          name: string;
+          type: "deduction" | "adjustment";
+          amount: number;
+          notes?: string | null;
+        };
+        Update: {
+          name?: string;
+          type?: "deduction" | "adjustment";
+          amount?: number;
+          notes?: string | null;
+        };
+        Relationships: [];
+      };
+      custom_deduction_types: {
+        Row: {
+          id: string;
+          company_id: string;
+          name: string;
+          is_active: boolean;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          company_id: string;
+          name: string;
+          is_active?: boolean;
+        };
+        Update: {
+          name?: string;
+          is_active?: boolean;
+        };
+        Relationships: [];
+      };
+      recurring_deductions: {
+        Row: {
+          id: string;
+          profile_id: string;
+          company_id: string;
+          custom_deduction_type_id: string;
+          amount: number;
+          start_date: string;
+          end_date: string | null;
+          is_active: boolean;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          profile_id: string;
+          company_id: string;
+          custom_deduction_type_id: string;
+          amount: number;
+          start_date: string;
+          end_date?: string | null;
+          is_active?: boolean;
+        };
+        Update: {
+          amount?: number;
+          start_date?: string;
+          end_date?: string | null;
+          is_active?: boolean;
+        };
+        Relationships: [];
+      };
+      ph_contribution_tables: {
+        Row: {
+          id: string;
+          type: "sss" | "philhealth" | "pagibig";
+          salary_from: number;
+          salary_to: number;
+          employee_share: number;
+          employer_share: number;
+          effective_year: number;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          type: "sss" | "philhealth" | "pagibig";
+          salary_from: number;
+          salary_to: number;
+          employee_share: number;
+          employer_share: number;
+          effective_year: number;
+        };
+        Update: {
+          type?: "sss" | "philhealth" | "pagibig";
+          salary_from?: number;
+          salary_to?: number;
+          employee_share?: number;
+          employer_share?: number;
+          effective_year?: number;
+        };
+        Relationships: [];
+      };
+      ph_tax_brackets: {
+        Row: {
+          id: string;
+          compensation_from: number;
+          compensation_to: number;
+          tax_rate: number;
+          base_tax: number;
+          frequency: "monthly" | "semi_monthly" | "weekly";
+          effective_year: number;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          compensation_from: number;
+          compensation_to: number;
+          tax_rate: number;
+          base_tax: number;
+          frequency: "monthly" | "semi_monthly" | "weekly";
+          effective_year: number;
+        };
+        Update: {
+          compensation_from?: number;
+          compensation_to?: number;
+          tax_rate?: number;
+          base_tax?: number;
+          frequency?: "monthly" | "semi_monthly" | "weekly";
+          effective_year?: number;
         };
         Relationships: [];
       };

@@ -8,6 +8,7 @@ import {
   MoreHorizontal,
   Clock,
   CalendarDays,
+  Wallet,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { RoleName } from "@/types";
@@ -30,6 +31,7 @@ const TAB_ITEMS: TabItem[] = [
   },
   { label: "Attendance", href: "/attendance", icon: Clock, roles: [] },
   { label: "Leave", href: "/leave", icon: CalendarDays, roles: [] },
+  { label: "Payroll", href: "/payroll", icon: Wallet, roles: [] },
   { label: "More", href: "/settings", icon: MoreHorizontal, roles: [] },
 ];
 
