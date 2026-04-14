@@ -45,9 +45,7 @@ export function LeaveRequestForm({ leaveTypes, users }: LeaveRequestFormProps) {
       toast.success("Leave request submitted for approval");
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setOpen(false);
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       setSelectedTypeId("");
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       setRelieverCount(1);
     }
     if (state && "error" in state) toast.error(state.error);
@@ -75,7 +73,7 @@ export function LeaveRequestForm({ leaveTypes, users }: LeaveRequestFormProps) {
               required
               value={selectedTypeId}
               onValueChange={(v) => {
-                setSelectedTypeId(v);
+                setSelectedTypeId(v ?? "");
                 setRelieverCount(1);
               }}
             >
