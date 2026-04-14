@@ -363,3 +363,152 @@ export async function getTeamLeaves(filters: {
 
   return data ?? [];
 }
+
+/**
+ * Get an employee's leave balances with leave type info.
+ * Returns all active leave types with optional balance for current year.
+ */
+export async function getEmployeeLeaveBalances(profileId: string) {
+  const supabase = await createClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return [];
+
+  // Get employee's company
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("company_id")
+    .eq("id", profileId)
+    .single();
+
+  if (!profile) return [];
+
+  const year = new Date().getFullYear();
+
+  // Get all active leave types for the company
+  const { data: leaveTypes } = await supabase
+    .from("leave_types")
+    .select("*")
+    .eq("company_id", profile.company_id)
+    .eq("is_active", true)
+    .order("name");
+
+  // Get existing balances for this employee + year
+  const { data: balances } = await supabase
+    .from("leave_balances")
+    .select("*")
+    .eq("profile_id", profileId)
+    .eq("year", year);
+
+  // Merge: each leave type with its balance (or null)
+  return (leaveTypes ?? []).map((lt) => {
+    const balance = (balances ?? []).find((b) => b.leave_type_id === lt.id);
+    return {
+      leaveType: lt,
+      balance: balance ?? null,
+    };
+  });
+}
+
+/**
+ * Allocate a leave balance for an employee for a specific leave type.
+ * Prorates based on months remaining until the company's reset date.
+ */
+export async function allocateLeaveBalance(
+  profileId: string,
+  leaveTypeId: string
+) {
+  const supabase = await createClient();
+
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("company_id")
+    .eq("id", profileId)
+    .single();
+
+  if (!profile) return { error: "Employee not found" };
+
+  const year = new Date().getFullYear();
+
+  // Check if already allocated
+  const { data: existing } = await supabase
+    .from("leave_balances")
+    .select("id")
+    .eq("profile_id", profileId)
+    .eq("leave_type_id", leaveTypeId)
+    .eq("year", year)
+    .single();
+
+  if (existing) return { error: "Balance already allocated for this year" };
+
+  // Get leave type
+  const { data: leaveType } = await supabase
+    .from("leave_types")
+    .select("default_days")
+    .eq("id", leaveTypeId)
+    .single();
+
+  if (!leaveType) return { error: "Leave type not found" };
+
+  // Get reset date for proration
+  const { data: settings } = await supabase
+    .from("leave_settings")
+    .select("reset_month, reset_day")
+    .eq("company_id", profile.company_id)
+    .single();
+
+  const resetMonth = settings?.reset_month ?? 1;
+  const resetDay = settings?.reset_day ?? 1;
+
+  // Calculate months remaining until next reset
+  const now = new Date();
+  let nextReset = new Date(year, resetMonth - 1, resetDay);
+  if (nextReset <= now) {
+    nextReset = new Date(year + 1, resetMonth - 1, resetDay);
+  }
+
+  const monthsRemaining = Math.max(
+    0,
+    (nextReset.getFullYear() - now.getFullYear()) * 12 +
+      (nextReset.getMonth() - now.getMonth())
+  );
+
+  // Prorate: round to nearest 0.5
+  const prorated = Math.round((leaveType.default_days * monthsRemaining / 12) * 2) / 2;
+
+  const { error } = await supabase.from("leave_balances").insert({
+    profile_id: profileId,
+    company_id: profile.company_id,
+    leave_type_id: leaveTypeId,
+    year,
+    total_days: prorated,
+    used_days: 0,
+    remaining_days: prorated,
+    carried_over_days: 0,
+  });
+
+  if (error) return { error: "Failed to allocate balance" };
+
+  revalidatePath(`/employees/${profileId}`);
+  return { success: true };
+}
+
+/**
+ * Allocate balances for all unallocated leave types for an employee.
+ */
+export async function allocateAllLeaveBalances(profileId: string) {
+  const balanceData = await getEmployeeLeaveBalances(profileId);
+
+  let allocated = 0;
+  for (const item of balanceData) {
+    if (!item.balance) {
+      const result = await allocateLeaveBalance(profileId, item.leaveType.id);
+      if ("success" in result) allocated++;
+    }
+  }
+
+  revalidatePath(`/employees/${profileId}`);
+  return { success: true, allocated };
+}
