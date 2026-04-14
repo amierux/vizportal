@@ -151,6 +151,21 @@ export async function reorderSections(formId: string, sectionIds: string[]) {
 
 // ─── Fields ───────────────────────────────────────────────────────────────────
 
+type FieldType =
+  | "text"
+  | "number"
+  | "date"
+  | "textarea"
+  | "select"
+  | "multi_select"
+  | "checkbox"
+  | "radio"
+  | "file"
+  | "signature"
+  | "email"
+  | "phone"
+  | "calculated";
+
 /**
  * Add a new field to a section at the next position.
  * name defaults to label, is_required defaults to false.
@@ -179,6 +194,8 @@ export async function addField(
 
   const nextPosition = existing ? existing.position + 1 : 0;
 
+  const fieldType = type as FieldType;
+
   const { data: field, error } = await supabase
     .from("form_fields")
     .insert({
@@ -186,7 +203,7 @@ export async function addField(
       form_id: formId,
       name: label,
       label,
-      type,
+      type: fieldType,
       position: nextPosition,
       is_required: false,
     })
@@ -271,7 +288,8 @@ export async function updateField(_prevState: unknown, formData: FormData) {
   if (validation_rules !== undefined) updatePayload.validation_rules = validation_rules;
   if (conditional_logic !== undefined) updatePayload.conditional_logic = conditional_logic;
 
-  const { error } = await supabase.from("form_fields").update(updatePayload).eq("id", fieldId);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { error } = await (supabase as any).from("form_fields").update(updatePayload).eq("id", fieldId);
 
   if (error) return { error: "Failed to update field" };
 

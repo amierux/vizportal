@@ -138,7 +138,8 @@ export async function submitForm(
 
       const nextPosition = lastTask ? lastTask.position + 1 : 0;
 
-      const { data: task } = await supabase
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data: task } = await (supabase as any)
         .from("workspace_tasks")
         .insert({
           list_id: form.target_list_id,
@@ -201,10 +202,7 @@ export async function submitForm(
 export async function uploadFormFile(formId: string, submissionId: string, file: File) {
   const supabase = await createClient();
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  // Allow unauthenticated uploads for public forms; file param validates implicitly
+  // Allow unauthenticated uploads for public forms
 
   // Get company_id from form
   const { data: form } = await supabase
