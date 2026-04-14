@@ -7,6 +7,8 @@ import {
   Users,
   UserCircle,
   MoreHorizontal,
+  Clock,
+  CalendarDays,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { RoleName } from "@/types";
@@ -27,7 +29,8 @@ const TAB_ITEMS: TabItem[] = [
     icon: Users,
     roles: ["admin", "hr", "director", "business_manager", "dept_manager", "team_leader"],
   },
-  { label: "Profile", href: "/profile", icon: UserCircle, roles: [] },
+  { label: "Attendance", href: "/attendance", icon: Clock, roles: [] },
+  { label: "Leave", href: "/leave", icon: CalendarDays, roles: [] },
   { label: "More", href: "/settings", icon: MoreHorizontal, roles: [] },
 ];
 
