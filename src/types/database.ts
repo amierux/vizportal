@@ -1909,6 +1909,34 @@ export type Database = {
         };
         Relationships: [];
       };
+      dashboard_widgets: {
+        Row: {
+          id: string;
+          profile_id: string;
+          company_id: string;
+          widget_type: string;
+          position: number;
+          size: "small" | "medium" | "large";
+          config: unknown;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          profile_id: string;
+          company_id: string;
+          widget_type: string;
+          position: number;
+          size?: "small" | "medium" | "large";
+          config?: unknown;
+        };
+        Update: {
+          widget_type?: string;
+          position?: number;
+          size?: "small" | "medium" | "large";
+          config?: unknown;
+        };
+        Relationships: [];
+      };
     };
     Views: Record<string, never>;
     Functions: {

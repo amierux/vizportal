@@ -63,6 +63,7 @@ export type FormSubmission = Database["public"]["Tables"]["form_submissions"]["R
 export type FormAssignment = Database["public"]["Tables"]["form_assignments"]["Row"];
 export type FormApprovalConfig = Database["public"]["Tables"]["form_approval_configs"]["Row"];
 export type FormApprovalStep = Database["public"]["Tables"]["form_approval_steps"]["Row"];
+export type DashboardWidget = Database["public"]["Tables"]["dashboard_widgets"]["Row"];
 
 export type ApprovalType = "manual_clock" | "leave_request";
 export type AttendanceStatus = "present" | "late" | "absent" | "half_day" | "on_leave";
