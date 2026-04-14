@@ -7,6 +7,7 @@ export const leaveTypeSchema = z.object({
   is_paid: z.boolean().default(true),
   applicable_gender: z.enum(["all", "male", "female"]).default("all"),
   requires_attachment: z.boolean().default(false),
+  requires_reliever: z.boolean().default(false),
   is_carry_over: z.boolean().default(false),
   max_carry_over_days: z.number().min(0).default(0),
 });

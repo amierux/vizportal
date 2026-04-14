@@ -44,6 +44,7 @@ export async function createLeaveType(_prevState: unknown, formData: FormData) {
     is_paid: formData.get("is_paid") === "true",
     applicable_gender: (formData.get("applicable_gender") as string) || "all",
     requires_attachment: formData.get("requires_attachment") === "true",
+    requires_reliever: formData.get("requires_reliever") === "true",
     is_carry_over: formData.get("is_carry_over") === "true",
     max_carry_over_days: Number(formData.get("max_carry_over_days") || 0),
   };
@@ -80,6 +81,7 @@ export async function updateLeaveType(_prevState: unknown, formData: FormData) {
     is_paid: formData.get("is_paid") === "true",
     applicable_gender: (formData.get("applicable_gender") as string) || "all",
     requires_attachment: formData.get("requires_attachment") === "true",
+    requires_reliever: formData.get("requires_reliever") === "true",
     is_carry_over: formData.get("is_carry_over") === "true",
     max_carry_over_days: Number(formData.get("max_carry_over_days") || 0),
   };
@@ -107,6 +109,23 @@ export async function toggleLeaveTypeActive(id: string, isActive: boolean) {
   const { error } = await supabase
     .from("leave_types")
     .update({ is_active: isActive })
+    .eq("id", id);
+
+  if (error) return { error: "Failed to update leave type" };
+
+  revalidatePath("/leave/settings");
+  return { success: true };
+}
+
+/**
+ * Toggle requires_reliever flag on a leave type.
+ */
+export async function toggleLeaveTypeReliever(id: string, requiresReliever: boolean) {
+  const supabase = await createClient();
+
+  const { error } = await supabase
+    .from("leave_types")
+    .update({ requires_reliever: requiresReliever })
     .eq("id", id);
 
   if (error) return { error: "Failed to update leave type" };

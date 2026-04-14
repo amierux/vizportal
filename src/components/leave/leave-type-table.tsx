@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState, useEffect, useState } from "react";
-import { createLeaveType, updateLeaveType, toggleLeaveTypeActive } from "@/lib/actions/leave-types";
+import { createLeaveType, updateLeaveType, toggleLeaveTypeActive, toggleLeaveTypeReliever } from "@/lib/actions/leave-types";
 import {
   Table,
   TableBody,
@@ -68,6 +68,12 @@ export function LeaveTypeTable({ leaveTypes }: LeaveTypeTableProps) {
     else toast.success(current ? "Leave type deactivated" : "Leave type activated");
   }
 
+  async function handleRelieverToggle(id: string, current: boolean) {
+    const result = await toggleLeaveTypeReliever(id, !current);
+    if ("error" in result) toast.error(result.error);
+    else toast.success(current ? "Reliever requirement removed" : "Reliever requirement enabled");
+  }
+
   const editType = editId ? leaveTypes.find((t) => t.id === editId) : null;
 
   function renderForm(action: typeof createAction, defaultValues?: LeaveType, pending?: boolean) {
@@ -113,6 +119,11 @@ export function LeaveTypeTable({ leaveTypes }: LeaveTypeTableProps) {
             Requires Attachment
           </label>
           <label className="flex items-center gap-2 text-sm">
+            <input type="hidden" name="requires_reliever" value="false" />
+            <input type="checkbox" name="requires_reliever" value="true" defaultChecked={defaultValues?.requires_reliever ?? false} />
+            Requires Reliever
+          </label>
+          <label className="flex items-center gap-2 text-sm">
             <input type="hidden" name="is_carry_over" value="false" />
             <input type="checkbox" name="is_carry_over" value="true" defaultChecked={defaultValues?.is_carry_over ?? false} />
             Carry Over
@@ -151,6 +162,7 @@ export function LeaveTypeTable({ leaveTypes }: LeaveTypeTableProps) {
             <TableHead>Days</TableHead>
             <TableHead>Gender</TableHead>
             <TableHead>Paid</TableHead>
+            <TableHead>Reliever</TableHead>
             <TableHead>Carry Over</TableHead>
             <TableHead>Status</TableHead>
             <TableHead></TableHead>
@@ -164,6 +176,15 @@ export function LeaveTypeTable({ leaveTypes }: LeaveTypeTableProps) {
               <TableCell>{t.default_days}</TableCell>
               <TableCell className="capitalize">{t.applicable_gender}</TableCell>
               <TableCell>{t.is_paid ? "Yes" : "No"}</TableCell>
+              <TableCell>
+                <Badge
+                  variant={t.requires_reliever ? "default" : "secondary"}
+                  className="cursor-pointer"
+                  onClick={() => handleRelieverToggle(t.id, t.requires_reliever)}
+                >
+                  {t.requires_reliever ? "Yes" : "No"}
+                </Badge>
+              </TableCell>
               <TableCell>{t.is_carry_over ? `Yes (max ${t.max_carry_over_days})` : "No"}</TableCell>
               <TableCell>
                 <Badge variant={t.is_active ? "default" : "secondary"} className="cursor-pointer" onClick={() => handleToggle(t.id, t.is_active)}>
