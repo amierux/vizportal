@@ -10,6 +10,21 @@ export type JobLevel = Database["public"]["Tables"]["job_levels"]["Row"];
 export type EmployeeDetail = Database["public"]["Tables"]["employee_details"]["Row"];
 export type EmployeeDocument = Database["public"]["Tables"]["employee_documents"]["Row"];
 export type Invitation = Database["public"]["Tables"]["invitations"]["Row"];
+export type EmployeeSchedule = Database["public"]["Tables"]["employee_schedules"]["Row"];
+export type ClockEntry = Database["public"]["Tables"]["clock_entries"]["Row"];
+export type DailyAttendanceSummary = Database["public"]["Tables"]["daily_attendance_summary"]["Row"];
+export type LeaveType = Database["public"]["Tables"]["leave_types"]["Row"];
+export type LeaveSettings = Database["public"]["Tables"]["leave_settings"]["Row"];
+export type LeaveBalance = Database["public"]["Tables"]["leave_balances"]["Row"];
+export type LeaveRequest = Database["public"]["Tables"]["leave_requests"]["Row"];
+export type ApprovalRequest = Database["public"]["Tables"]["approval_requests"]["Row"];
+export type ApprovalStep = Database["public"]["Tables"]["approval_steps"]["Row"];
+
+export type ApprovalType = "manual_clock" | "leave_request";
+export type AttendanceStatus = "present" | "late" | "absent" | "half_day" | "on_leave";
+export type WorkType = "full_time" | "part_time";
+export type LeaveRequestStatus = "pending" | "approved" | "rejected" | "cancelled";
+export type ApprovalStepStatus = "pending" | "approved" | "rejected";
 
 // Extended types for UI
 export type ProfileWithRoles = Profile & {

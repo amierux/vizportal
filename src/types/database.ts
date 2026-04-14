@@ -298,6 +298,315 @@ export type Database = {
         };
         Relationships: [];
       };
+      employee_schedules: {
+        Row: {
+          id: string;
+          profile_id: string;
+          company_id: string;
+          work_type: "full_time" | "part_time";
+          start_time: string;
+          end_time: string;
+          work_days: string[];
+          timezone: string;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          profile_id: string;
+          company_id: string;
+          work_type: "full_time" | "part_time";
+          start_time: string;
+          end_time: string;
+          work_days: string[];
+          timezone?: string;
+        };
+        Update: {
+          work_type?: "full_time" | "part_time";
+          start_time?: string;
+          end_time?: string;
+          work_days?: string[];
+          timezone?: string;
+        };
+        Relationships: [];
+      };
+      clock_entries: {
+        Row: {
+          id: string;
+          company_id: string;
+          profile_id: string;
+          type: "clock_in" | "clock_out";
+          timestamp: string;
+          selfie_url: string | null;
+          latitude: number | null;
+          longitude: number | null;
+          is_manual: boolean;
+          manual_remarks: string | null;
+          date: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          company_id: string;
+          profile_id: string;
+          type: "clock_in" | "clock_out";
+          timestamp: string;
+          selfie_url?: string | null;
+          latitude?: number | null;
+          longitude?: number | null;
+          is_manual?: boolean;
+          manual_remarks?: string | null;
+          date: string;
+        };
+        Update: {
+          is_manual?: boolean;
+          manual_remarks?: string | null;
+        };
+        Relationships: [];
+      };
+      daily_attendance_summary: {
+        Row: {
+          id: string;
+          profile_id: string;
+          company_id: string;
+          date: string;
+          total_hours: number;
+          required_hours: number;
+          is_late: boolean;
+          late_minutes: number;
+          is_early_out: boolean;
+          early_out_minutes: number;
+          is_undertime: boolean;
+          undertime_minutes: number;
+          overtime_minutes: number;
+          has_missing_entry: boolean;
+          status: "present" | "late" | "absent" | "half_day" | "on_leave";
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          profile_id: string;
+          company_id: string;
+          date: string;
+          total_hours?: number;
+          required_hours: number;
+          is_late?: boolean;
+          late_minutes?: number;
+          is_early_out?: boolean;
+          early_out_minutes?: number;
+          is_undertime?: boolean;
+          undertime_minutes?: number;
+          overtime_minutes?: number;
+          has_missing_entry?: boolean;
+          status?: "present" | "late" | "absent" | "half_day" | "on_leave";
+        };
+        Update: {
+          total_hours?: number;
+          required_hours?: number;
+          is_late?: boolean;
+          late_minutes?: number;
+          is_early_out?: boolean;
+          early_out_minutes?: number;
+          is_undertime?: boolean;
+          undertime_minutes?: number;
+          overtime_minutes?: number;
+          has_missing_entry?: boolean;
+          status?: "present" | "late" | "absent" | "half_day" | "on_leave";
+        };
+        Relationships: [];
+      };
+      leave_types: {
+        Row: {
+          id: string;
+          company_id: string;
+          name: string;
+          code: string;
+          default_days: number;
+          is_paid: boolean;
+          applicable_gender: "all" | "male" | "female";
+          requires_attachment: boolean;
+          is_carry_over: boolean;
+          max_carry_over_days: number;
+          is_active: boolean;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          company_id: string;
+          name: string;
+          code: string;
+          default_days: number;
+          is_paid?: boolean;
+          applicable_gender?: "all" | "male" | "female";
+          requires_attachment?: boolean;
+          is_carry_over?: boolean;
+          max_carry_over_days?: number;
+          is_active?: boolean;
+        };
+        Update: {
+          name?: string;
+          code?: string;
+          default_days?: number;
+          is_paid?: boolean;
+          applicable_gender?: "all" | "male" | "female";
+          requires_attachment?: boolean;
+          is_carry_over?: boolean;
+          max_carry_over_days?: number;
+          is_active?: boolean;
+        };
+        Relationships: [];
+      };
+      leave_settings: {
+        Row: {
+          id: string;
+          company_id: string;
+          reset_month: number;
+          reset_day: number;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          company_id: string;
+          reset_month?: number;
+          reset_day?: number;
+        };
+        Update: {
+          reset_month?: number;
+          reset_day?: number;
+        };
+        Relationships: [];
+      };
+      leave_balances: {
+        Row: {
+          id: string;
+          profile_id: string;
+          company_id: string;
+          leave_type_id: string;
+          year: number;
+          total_days: number;
+          used_days: number;
+          remaining_days: number;
+          carried_over_days: number;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          profile_id: string;
+          company_id: string;
+          leave_type_id: string;
+          year: number;
+          total_days: number;
+          used_days?: number;
+          remaining_days: number;
+          carried_over_days?: number;
+        };
+        Update: {
+          total_days?: number;
+          used_days?: number;
+          remaining_days?: number;
+          carried_over_days?: number;
+        };
+        Relationships: [];
+      };
+      leave_requests: {
+        Row: {
+          id: string;
+          company_id: string;
+          profile_id: string;
+          leave_type_id: string;
+          start_date: string;
+          end_date: string;
+          total_days: number;
+          reason: string | null;
+          attachment_url: string | null;
+          status: "pending" | "approved" | "rejected" | "cancelled";
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          company_id: string;
+          profile_id: string;
+          leave_type_id: string;
+          start_date: string;
+          end_date: string;
+          total_days: number;
+          reason?: string | null;
+          attachment_url?: string | null;
+          status?: "pending" | "approved" | "rejected" | "cancelled";
+        };
+        Update: {
+          status?: "pending" | "approved" | "rejected" | "cancelled";
+          reason?: string | null;
+          attachment_url?: string | null;
+        };
+        Relationships: [];
+      };
+      approval_requests: {
+        Row: {
+          id: string;
+          company_id: string;
+          type: string;
+          reference_id: string;
+          requester_id: string;
+          status: "pending" | "approved" | "rejected" | "cancelled";
+          current_step: number;
+          total_steps: number;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          company_id: string;
+          type: string;
+          reference_id: string;
+          requester_id: string;
+          status?: "pending" | "approved" | "rejected" | "cancelled";
+          current_step?: number;
+          total_steps: number;
+        };
+        Update: {
+          status?: "pending" | "approved" | "rejected" | "cancelled";
+          current_step?: number;
+        };
+        Relationships: [];
+      };
+      approval_steps: {
+        Row: {
+          id: string;
+          approval_request_id: string;
+          step_order: number;
+          approver_id: string;
+          status: "pending" | "approved" | "rejected";
+          comment: string | null;
+          decided_at: string | null;
+          email_sent_at: string | null;
+          reminder_sent_at: string | null;
+          token: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          approval_request_id: string;
+          step_order: number;
+          approver_id: string;
+          status?: "pending" | "approved" | "rejected";
+          comment?: string | null;
+          token?: string;
+        };
+        Update: {
+          status?: "pending" | "approved" | "rejected";
+          comment?: string | null;
+          decided_at?: string | null;
+          email_sent_at?: string | null;
+          reminder_sent_at?: string | null;
+        };
+        Relationships: [];
+      };
     };
     Views: Record<string, never>;
     Functions: {

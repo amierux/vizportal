@@ -26,6 +26,15 @@ function getPageTitle(pathname: string): string {
     "/settings/departments": "Departments",
     "/settings/roles": "Roles",
     "/settings/invitations": "Invitations",
+    "/attendance": "My Attendance",
+    "/attendance/team": "Team Attendance",
+    "/attendance/manage": "Attendance Management",
+    "/attendance/reports": "Attendance Reports",
+    "/leave": "My Leave",
+    "/leave/team": "Team Leave",
+    "/leave/manage": "Leave Management",
+    "/leave/settings": "Leave Settings",
+    "/approvals": "My Approvals",
   };
   return map[pathname] ?? "VizPortal";
 }

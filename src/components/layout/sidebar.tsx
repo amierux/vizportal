@@ -11,6 +11,9 @@ import {
   LogOut,
   ChevronLeft,
   ChevronRight,
+  Clock,
+  CalendarDays,
+  CheckSquare,
 } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
@@ -42,6 +45,9 @@ const NAV_ITEMS: NavItem[] = [
     icon: Users,
     roles: ["admin", "hr", "director", "business_manager", "dept_manager", "team_leader"],
   },
+  { label: "Attendance", href: "/attendance", icon: Clock, roles: [] },
+  { label: "Leave", href: "/leave", icon: CalendarDays, roles: [] },
+  { label: "Approvals", href: "/approvals", icon: CheckSquare, roles: [] },
   { label: "My Profile", href: "/profile", icon: UserCircle, roles: [] },
   { label: "Settings", href: "/settings", icon: Settings, roles: ["admin"] },
 ];
