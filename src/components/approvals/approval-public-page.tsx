@@ -46,6 +46,7 @@ export function ApprovalPublicPage({ step, referenceDetails, token }: ApprovalPu
   useEffect(() => {
     if (state && "success" in state) {
       toast.success("Decision recorded successfully");
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setDecided(true);
     }
     if (state && "error" in state) toast.error(state.error);

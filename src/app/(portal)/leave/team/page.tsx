@@ -12,6 +12,7 @@ export default async function TeamLeavePage() {
   return (
     <div className="space-y-6">
       <h1 className="text-2xl font-bold">Team Leave Calendar</h1>
+      {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
       <LeaveCalendar leaves={leaves as any} />
     </div>
   );

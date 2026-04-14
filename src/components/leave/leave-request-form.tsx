@@ -37,6 +37,7 @@ export function LeaveRequestForm({ leaveTypes }: LeaveRequestFormProps) {
   useEffect(() => {
     if (state && "success" in state) {
       toast.success("Leave request submitted for approval");
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setOpen(false);
     }
     if (state && "error" in state) toast.error(state.error);

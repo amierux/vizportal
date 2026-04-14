@@ -73,10 +73,13 @@ export function LeaveRequestsTable({ requests, showEmployee }: LeaveRequestsTabl
             <TableRow key={req.id}>
               {showEmployee && (
                 <TableCell>
-                  {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                  {(req as any).profiles
-                    ? `${(req as any).profiles.first_name} ${(req as any).profiles.last_name}`
-                    : "—"}
+                  {
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                    (req as any).profiles
+                      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                      ? `${(req as any).profiles.first_name} ${(req as any).profiles.last_name}`
+                      : "—"
+                  }
                 </TableCell>
               )}
               <TableCell>

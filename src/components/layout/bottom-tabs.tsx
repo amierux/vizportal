@@ -5,7 +5,6 @@ import { usePathname } from "next/navigation";
 import {
   LayoutDashboard,
   Users,
-  UserCircle,
   MoreHorizontal,
   Clock,
   CalendarDays,

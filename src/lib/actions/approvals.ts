@@ -5,8 +5,6 @@ import { createClient } from "@/lib/supabase/server";
 import { sendEmail, buildApprovalEmail, buildStatusEmail } from "@/lib/utils/email";
 import { formatFullName } from "@/lib/utils/format";
 
-type ActionState = { error: string } | { success: true } | null;
-
 /**
  * Create an approval request with TL → DM chain.
  * Determines approvers from requester's department.
@@ -53,10 +51,11 @@ export async function createApprovalRequest(params: {
       .select("profile_id, roles(name)")
       .eq("roles.name", "hr");
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    /* eslint-disable @typescript-eslint/no-explicit-any */
     const hrProfileIds = (hrUsers ?? [])
       .filter((ur: any) => ur.roles?.name === "hr" && ur.profile_id !== params.requesterId)
       .map((ur: any) => ur.profile_id);
+    /* eslint-enable @typescript-eslint/no-explicit-any */
 
     if (hrProfileIds.length > 0) {
       approvers.push(hrProfileIds[0]);

@@ -20,11 +20,13 @@ export default async function LeavePage() {
 
       <div>
         <h2 className="mb-3 text-lg font-semibold">Leave Balances</h2>
+        {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
         <BalanceCards balances={balances as any} />
       </div>
 
       <div>
         <h2 className="mb-3 text-lg font-semibold">My Requests</h2>
+        {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
         <LeaveRequestsTable requests={requests as any} />
       </div>
     </div>

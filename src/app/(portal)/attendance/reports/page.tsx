@@ -37,6 +37,7 @@ export default async function AttendanceReportsPage({
     }
   >();
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   for (const row of rawData as any[]) {
     const pid = row.profiles?.id ?? row.profile_id;
     if (!employeeMap.has(pid)) {

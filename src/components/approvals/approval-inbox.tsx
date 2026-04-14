@@ -34,6 +34,7 @@ export function ApprovalInbox({ approvals }: ApprovalInboxProps) {
   useEffect(() => {
     if (state && "success" in state) {
       toast.success("Decision recorded");
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setExpandedId(null);
     }
     if (state && "error" in state) toast.error(state.error);
@@ -45,7 +46,7 @@ export function ApprovalInbox({ approvals }: ApprovalInboxProps) {
         <CardContent className="flex flex-col items-center justify-center py-12">
           <Inbox className="h-12 w-12 text-muted-foreground" />
           <p className="mt-4 text-lg font-medium">No pending approvals</p>
-          <p className="text-sm text-muted-foreground">You're all caught up!</p>
+          <p className="text-sm text-muted-foreground">You&apos;re all caught up!</p>
         </CardContent>
       </Card>
     );

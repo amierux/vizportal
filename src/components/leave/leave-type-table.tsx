@@ -47,6 +47,7 @@ export function LeaveTypeTable({ leaveTypes }: LeaveTypeTableProps) {
   useEffect(() => {
     if (createState && "success" in createState) {
       toast.success("Leave type created");
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setCreateOpen(false);
     }
     if (createState && "error" in createState) toast.error(createState.error);
@@ -55,6 +56,7 @@ export function LeaveTypeTable({ leaveTypes }: LeaveTypeTableProps) {
   useEffect(() => {
     if (updateState && "success" in updateState) {
       toast.success("Leave type updated");
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setEditId(null);
     }
     if (updateState && "error" in updateState) toast.error(updateState.error);

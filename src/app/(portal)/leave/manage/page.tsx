@@ -1,4 +1,4 @@
-import { getLeaveRequests, getAllLeaveBalances } from "@/lib/actions/leave";
+import { getLeaveRequests } from "@/lib/actions/leave";
 import { getLeaveTypes } from "@/lib/actions/leave-types";
 import { LeaveRequestsTable } from "@/components/leave/leave-requests-table";
 
@@ -13,6 +13,7 @@ export default async function LeaveManagePage({
   const status = params.status ?? "";
   const departmentId = params.department_id ?? "";
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [requests, leaveTypes] = await Promise.all([
     getLeaveRequests({
       status: status || undefined,
@@ -24,6 +25,7 @@ export default async function LeaveManagePage({
   return (
     <div className="space-y-6">
       <h1 className="text-2xl font-bold">Leave Management</h1>
+      {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
       <LeaveRequestsTable requests={requests as any} showEmployee />
     </div>
   );
