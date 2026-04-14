@@ -3,6 +3,10 @@ import { getLeaveTypes } from "@/lib/actions/leave-types";
 import { BalanceCards } from "@/components/leave/balance-cards";
 import { LeaveRequestForm } from "@/components/leave/leave-request-form";
 import { LeaveRequestsTable } from "@/components/leave/leave-requests-table";
+import { createClient } from "@/lib/supabase/server";
+import { LeaveRecords } from "@/components/leave/leave-records";
+import { Separator } from "@/components/ui/separator";
+import type { RoleName } from "@/types";
 
 export default async function LeavePage() {
   const [balances, requests, leaveTypes] = await Promise.all([
@@ -10,6 +14,30 @@ export default async function LeavePage() {
     getMyLeaveRequests(),
     getLeaveTypes(),
   ]);
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("company_id")
+    .eq("id", user!.id)
+    .single();
+
+  const { data: userRoles } = await supabase
+    .from("user_roles")
+    .select("roles(name)")
+    .eq("profile_id", user!.id);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const roles: RoleName[] = (userRoles ?? []).map((ur: any) => ur.roles.name);
+
+  const { data: departments } = await supabase
+    .from("departments")
+    .select("id, name")
+    .eq("company_id", profile!.company_id)
+    .order("name");
 
   return (
     <div className="space-y-6">
@@ -29,6 +57,9 @@ export default async function LeavePage() {
         {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
         <LeaveRequestsTable requests={requests as any} />
       </div>
+
+      <Separator />
+      <LeaveRecords userRoles={roles} departments={departments ?? []} />
     </div>
   );
 }

@@ -5,6 +5,9 @@ import { ClockButton } from "@/components/attendance/clock-button";
 import { TodaySessions } from "@/components/attendance/today-sessions";
 import { AttendanceCalendar } from "@/components/attendance/attendance-calendar";
 import { ManualClockDialog } from "@/components/attendance/manual-clock-dialog";
+import { AttendanceRecords } from "@/components/attendance/attendance-records";
+import { Separator } from "@/components/ui/separator";
+import type { RoleName } from "@/types";
 
 export default async function AttendancePage() {
   const supabase = await createClient();
@@ -39,6 +42,21 @@ export default async function AttendancePage() {
     .eq("profile_id", user.id)
     .gte("date", startDate)
     .lte("date", endDate);
+
+  // Get user roles for records tabs
+  const { data: userRoles } = await supabase
+    .from("user_roles")
+    .select("roles(name)")
+    .eq("profile_id", user.id);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const roles: RoleName[] = (userRoles ?? []).map((ur: any) => ur.roles.name);
+
+  // Get departments for filter
+  const { data: departments } = await supabase
+    .from("departments")
+    .select("id, name")
+    .eq("company_id", profile.company_id)
+    .order("name");
 
   const requiredHours = clockStatus?.schedule
     ? (() => {
@@ -81,6 +99,9 @@ export default async function AttendancePage() {
           workDays={clockStatus?.schedule?.work_days}
         />
       </div>
+
+      <Separator />
+      <AttendanceRecords userRoles={roles} departments={departments ?? []} />
     </div>
   );
 }
