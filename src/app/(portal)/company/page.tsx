@@ -1,8 +1,6 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { CompanyForm } from "@/components/company/company-form";
-import { DepartmentList } from "@/components/company/department-list";
-import { Separator } from "@/components/ui/separator";
 
 export default async function CompanyPage() {
   const supabase = await createClient();
@@ -26,12 +24,6 @@ export default async function CompanyPage() {
     .single();
   if (!company) redirect("/dashboard");
 
-  const { data: departments } = await supabase
-    .from("departments")
-    .select("*")
-    .eq("company_id", profile.company_id)
-    .order("name");
-
   const { data: members } = await supabase
     .from("profiles")
     .select("id, first_name, last_name")
@@ -42,14 +34,12 @@ export default async function CompanyPage() {
   return (
     <div className="mx-auto max-w-3xl space-y-8">
       <div>
-        <h2 className="text-xl font-semibold">General</h2>
+        <h2 className="text-xl font-semibold">Company Information</h2>
         <p className="text-sm text-muted-foreground">
-          Manage your company information and leadership
+          Manage your company details, logo, and favicon
         </p>
       </div>
       <CompanyForm company={company} members={members ?? []} />
-      <Separator />
-      <DepartmentList departments={departments ?? []} members={members ?? []} />
     </div>
   );
 }

@@ -9,6 +9,7 @@ export type Database = {
           id: string;
           name: string;
           logo_url: string | null;
+          favicon_url: string | null;
           business_manager_id: string | null;
           director_id: string | null;
           created_at: string;
@@ -18,12 +19,14 @@ export type Database = {
           id?: string;
           name: string;
           logo_url?: string | null;
+          favicon_url?: string | null;
           business_manager_id?: string | null;
           director_id?: string | null;
         };
         Update: {
           name?: string;
           logo_url?: string | null;
+          favicon_url?: string | null;
           business_manager_id?: string | null;
           director_id?: string | null;
         };

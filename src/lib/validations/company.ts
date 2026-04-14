@@ -3,6 +3,7 @@ import { z } from "zod";
 export const companySchema = z.object({
   name: z.string().min(1, "Company name is required"),
   logo_url: z.string().url().optional().nullable(),
+  favicon_url: z.string().url().optional().nullable(),
   business_manager_id: z.string().uuid().optional().nullable(),
   director_id: z.string().uuid().optional().nullable(),
 });
