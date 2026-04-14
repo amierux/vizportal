@@ -84,7 +84,8 @@ function ApprovalTypeCard({
     setSteps((prev) => prev.filter((_, i) => i !== index));
   }
 
-  function updateStepRole(index: number, role: string) {
+  function updateStepRole(index: number, role: string | null) {
+    if (!role) return;
     setSteps((prev) => prev.map((s, i) => (i === index ? { ...s, role } : s)));
   }
 

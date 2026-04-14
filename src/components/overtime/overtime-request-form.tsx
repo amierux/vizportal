@@ -29,9 +29,7 @@ export function OvertimeRequestForm() {
       toast.success("Overtime request submitted for approval");
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setOpen(false);
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       setStartTime("");
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       setEndTime("");
     }
     if (state && "error" in state) toast.error(state.error as string);
