@@ -1,3 +1,7 @@
+-- ============================================================
+-- CREATE TABLES FIRST (before policies that cross-reference)
+-- ============================================================
+
 -- Workspace folders
 CREATE TABLE workspace_folders (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -17,6 +21,37 @@ CREATE INDEX idx_workspace_folders_company ON workspace_folders(company_id);
 CREATE TRIGGER workspace_folders_updated_at
   BEFORE UPDATE ON workspace_folders
   FOR EACH ROW EXECUTE FUNCTION update_updated_at();
+
+-- Folder members
+CREATE TABLE workspace_folder_members (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  folder_id UUID REFERENCES workspace_folders(id) ON DELETE CASCADE NOT NULL,
+  profile_id UUID REFERENCES profiles(id) NOT NULL,
+  permission TEXT CHECK (permission IN ('viewer', 'creator', 'editor', 'admin')) NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT now() NOT NULL,
+  UNIQUE(folder_id, profile_id)
+);
+
+CREATE INDEX idx_workspace_folder_members_folder ON workspace_folder_members(folder_id);
+CREATE INDEX idx_workspace_folder_members_profile ON workspace_folder_members(profile_id);
+
+-- Folder statuses
+CREATE TABLE workspace_folder_statuses (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  folder_id UUID REFERENCES workspace_folders(id) ON DELETE CASCADE NOT NULL,
+  name TEXT NOT NULL,
+  color TEXT NOT NULL,
+  position INTEGER NOT NULL,
+  is_done BOOLEAN DEFAULT false NOT NULL,
+  requires_approval BOOLEAN DEFAULT false NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT now() NOT NULL
+);
+
+CREATE INDEX idx_workspace_folder_statuses_folder ON workspace_folder_statuses(folder_id);
+
+-- ============================================================
+-- RLS POLICIES (all tables exist now)
+-- ============================================================
 
 ALTER TABLE workspace_folders ENABLE ROW LEVEL SECURITY;
 
@@ -57,19 +92,6 @@ CREATE POLICY "Folder admins can delete"
     )
   );
 
--- Folder members
-CREATE TABLE workspace_folder_members (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  folder_id UUID REFERENCES workspace_folders(id) ON DELETE CASCADE NOT NULL,
-  profile_id UUID REFERENCES profiles(id) NOT NULL,
-  permission TEXT CHECK (permission IN ('viewer', 'creator', 'editor', 'admin')) NOT NULL,
-  created_at TIMESTAMPTZ DEFAULT now() NOT NULL,
-  UNIQUE(folder_id, profile_id)
-);
-
-CREATE INDEX idx_workspace_folder_members_folder ON workspace_folder_members(folder_id);
-CREATE INDEX idx_workspace_folder_members_profile ON workspace_folder_members(profile_id);
-
 ALTER TABLE workspace_folder_members ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "Users can view folder members"
@@ -86,20 +108,6 @@ CREATE POLICY "Folder admins can manage members"
     )
     OR has_role('admin')
   );
-
--- Folder statuses
-CREATE TABLE workspace_folder_statuses (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  folder_id UUID REFERENCES workspace_folders(id) ON DELETE CASCADE NOT NULL,
-  name TEXT NOT NULL,
-  color TEXT NOT NULL,
-  position INTEGER NOT NULL,
-  is_done BOOLEAN DEFAULT false NOT NULL,
-  requires_approval BOOLEAN DEFAULT false NOT NULL,
-  created_at TIMESTAMPTZ DEFAULT now() NOT NULL
-);
-
-CREATE INDEX idx_workspace_folder_statuses_folder ON workspace_folder_statuses(folder_id);
 
 ALTER TABLE workspace_folder_statuses ENABLE ROW LEVEL SECURITY;
 
