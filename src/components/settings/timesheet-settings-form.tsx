@@ -82,7 +82,8 @@ export function TimesheetSettingsForm({ settings, approvalConfig }: Props) {
     setSteps((prev) => prev.filter((_, idx) => idx !== i));
   }
 
-  function updateStep(i: number, field: keyof Step, value: string | boolean) {
+  function updateStep(i: number, field: keyof Step, value: string | boolean | null) {
+    if (value === null) return;
     setSteps((prev) =>
       prev.map((s, idx) => (idx === i ? { ...s, [field]: value } : s))
     );
@@ -122,7 +123,7 @@ export function TimesheetSettingsForm({ settings, approvalConfig }: Props) {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <Select value={deadlineDay} onValueChange={setDeadlineDay}>
+          <Select value={deadlineDay} onValueChange={(v) => { if (v) setDeadlineDay(v); }}>
             <SelectTrigger className="w-48">
               <SelectValue />
             </SelectTrigger>
@@ -161,7 +162,7 @@ export function TimesheetSettingsForm({ settings, approvalConfig }: Props) {
                   <span className="text-xs text-muted-foreground w-5 text-right">{i + 1}.</span>
                   <Select
                     value={step.role}
-                    onValueChange={(v) => updateStep(i, "role", v)}
+                    onValueChange={(v) => updateStep(i, "role", v ?? "team_leader")}
                   >
                     <SelectTrigger className="w-48 h-8 text-sm">
                       <SelectValue />

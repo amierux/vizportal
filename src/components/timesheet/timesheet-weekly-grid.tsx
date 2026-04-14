@@ -9,7 +9,7 @@ import { submitTimesheet } from "@/lib/actions/timesheet";
 import { searchMyTasks } from "@/lib/actions/workspace-time-entries";
 import { logTime } from "@/lib/actions/workspace-time-entries";
 import { updateTimeEntry } from "@/lib/actions/workspace-time-entries";
-import { ChevronLeft, ChevronRight, Plus, Send } from "lucide-react";
+import { Plus, Send } from "lucide-react";
 import {
   Dialog,
   DialogContent,

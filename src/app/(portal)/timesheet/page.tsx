@@ -5,9 +5,10 @@ import { TimesheetSubmission } from "@/components/timesheet/timesheet-submission
 import { TimesheetAllMembers } from "@/components/timesheet/timesheet-all-members";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
-import { Button } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button";
 import Link from "next/link";
 import { ChevronLeft, ChevronRight } from "lucide-react";
+import { cn } from "@/lib/utils";
 import type { RoleName } from "@/types";
 
 function getMonday(date: Date): Date {
@@ -31,6 +32,34 @@ function offsetWeek(weekStart: string, offset: number): string {
 type Props = {
   searchParams: Promise<{ week?: string }>;
 };
+
+function WeekNav({ weekStartDate, prevWeek, nextWeek, isCurrentWeek }: {
+  weekStartDate: string; prevWeek: string; nextWeek: string; isCurrentWeek: boolean;
+}) {
+  return (
+    <div className="flex items-center gap-2">
+      <Link
+        href={`/timesheet?week=${prevWeek}`}
+        className={cn(buttonVariants({ variant: "outline", size: "icon" }), "h-8 w-8")}
+      >
+        <ChevronLeft className="w-4 h-4" />
+      </Link>
+      <span className="text-sm font-medium px-1">Week of {weekStartDate}</span>
+      {isCurrentWeek ? (
+        <span className={cn(buttonVariants({ variant: "outline", size: "icon" }), "h-8 w-8 pointer-events-none opacity-50")}>
+          <ChevronRight className="w-4 h-4" />
+        </span>
+      ) : (
+        <Link
+          href={`/timesheet?week=${nextWeek}`}
+          className={cn(buttonVariants({ variant: "outline", size: "icon" }), "h-8 w-8")}
+        >
+          <ChevronRight className="w-4 h-4" />
+        </Link>
+      )}
+    </div>
+  );
+}
 
 export default async function TimesheetPage({ searchParams }: Props) {
   const { week } = await searchParams;
@@ -100,33 +129,7 @@ export default async function TimesheetPage({ searchParams }: Props) {
           </TabsList>
 
           <TabsContent value="my" className="animate-fade-in mt-4 space-y-4">
-            {/* Week navigation */}
-            <div className="flex items-center gap-2">
-              <Button variant="outline" size="icon" className="h-8 w-8" asChild>
-                <Link href={`/timesheet?week=${prevWeek}`}>
-                  <ChevronLeft className="w-4 h-4" />
-                </Link>
-              </Button>
-              <span className="text-sm font-medium px-1">
-                Week of {weekStartDate}
-              </span>
-              <Button
-                variant="outline"
-                size="icon"
-                className="h-8 w-8"
-                disabled={isCurrentWeek}
-                asChild={!isCurrentWeek}
-              >
-                {isCurrentWeek ? (
-                  <span><ChevronRight className="w-4 h-4" /></span>
-                ) : (
-                  <Link href={`/timesheet?week=${nextWeek}`}>
-                    <ChevronRight className="w-4 h-4" />
-                  </Link>
-                )}
-              </Button>
-            </div>
-
+            <WeekNav weekStartDate={weekStartDate} prevWeek={prevWeek} nextWeek={nextWeek} isCurrentWeek={isCurrentWeek} />
             {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
             <TimesheetSubmission submission={submission as any} weekStartDate={weekStartDate} />
             {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
@@ -140,33 +143,7 @@ export default async function TimesheetPage({ searchParams }: Props) {
         </Tabs>
       ) : (
         <div className="space-y-4">
-          {/* Week navigation */}
-          <div className="flex items-center gap-2">
-            <Button variant="outline" size="icon" className="h-8 w-8" asChild>
-              <Link href={`/timesheet?week=${prevWeek}`}>
-                <ChevronLeft className="w-4 h-4" />
-              </Link>
-            </Button>
-            <span className="text-sm font-medium px-1">
-              Week of {weekStartDate}
-            </span>
-            <Button
-              variant="outline"
-              size="icon"
-              className="h-8 w-8"
-              disabled={isCurrentWeek}
-              asChild={!isCurrentWeek}
-            >
-              {isCurrentWeek ? (
-                <span><ChevronRight className="w-4 h-4" /></span>
-              ) : (
-                <Link href={`/timesheet?week=${nextWeek}`}>
-                  <ChevronRight className="w-4 h-4" />
-                </Link>
-              )}
-            </Button>
-          </div>
-
+          <WeekNav weekStartDate={weekStartDate} prevWeek={prevWeek} nextWeek={nextWeek} isCurrentWeek={isCurrentWeek} />
           {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
           <TimesheetSubmission submission={submission as any} weekStartDate={weekStartDate} />
           {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}

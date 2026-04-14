@@ -133,7 +133,7 @@ export function TimesheetAllMembers({ submissions, departments }: Props) {
         </div>
         <div>
           <label className="text-xs text-muted-foreground mb-1 block">Department</label>
-          <Select value={filterDept} onValueChange={setFilterDept}>
+          <Select value={filterDept} onValueChange={(v) => setFilterDept(v ?? "all")}>
             <SelectTrigger className="h-8 text-sm w-44">
               <SelectValue />
             </SelectTrigger>
@@ -147,7 +147,7 @@ export function TimesheetAllMembers({ submissions, departments }: Props) {
         </div>
         <div>
           <label className="text-xs text-muted-foreground mb-1 block">Status</label>
-          <Select value={filterStatus} onValueChange={setFilterStatus}>
+          <Select value={filterStatus} onValueChange={(v) => setFilterStatus(v ?? "all")}>
             <SelectTrigger className="h-8 text-sm w-36">
               <SelectValue />
             </SelectTrigger>
