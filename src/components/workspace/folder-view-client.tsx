@@ -4,6 +4,8 @@ import { useState, useTransition } from "react";
 import { ViewSwitcher } from "./view-switcher";
 import { TaskListView } from "./task-list-view";
 import { TaskKanbanView } from "./task-kanban-view";
+import { TaskGanttView } from "./task-gantt-view";
+import { TaskCalendarView } from "./task-calendar-view";
 import { updateTaskStatus } from "@/lib/actions/workspace-tasks";
 import { toast } from "sonner";
 
@@ -46,11 +48,13 @@ type Member = {
   last_name: string | null;
 };
 
+type View = "list" | "kanban" | "gantt" | "calendar";
+
 type FolderViewClientProps = {
   tasks: Task[];
   statuses: Status[];
   members: Member[];
-  initialView?: "list" | "kanban";
+  initialView?: View;
 };
 
 export function FolderViewClient({
@@ -59,7 +63,7 @@ export function FolderViewClient({
   members,
   initialView = "list",
 }: FolderViewClientProps) {
-  const [activeView, setActiveView] = useState<"list" | "kanban">(initialView);
+  const [activeView, setActiveView] = useState<View>(initialView);
   const [, startTransition] = useTransition();
 
   function handleStatusChange(taskId: string, statusId: string) {
@@ -75,22 +79,29 @@ export function FolderViewClient({
     <div className="space-y-4">
       <ViewSwitcher
         activeView={activeView}
-        onViewChange={(v) => setActiveView(v as "list" | "kanban")}
+        onViewChange={(v) => setActiveView(v as View)}
       />
-      {activeView === "list" ? (
+      {activeView === "list" && (
         <TaskListView
           tasks={tasks}
           statuses={statuses}
           members={members}
           onStatusChange={handleStatusChange}
         />
-      ) : (
+      )}
+      {activeView === "kanban" && (
         <TaskKanbanView
           tasks={tasks}
           statuses={statuses}
           members={members}
           onStatusChange={handleStatusChange}
         />
+      )}
+      {activeView === "gantt" && (
+        <TaskGanttView tasks={tasks} statuses={statuses} />
+      )}
+      {activeView === "calendar" && (
+        <TaskCalendarView tasks={tasks} />
       )}
     </div>
   );
