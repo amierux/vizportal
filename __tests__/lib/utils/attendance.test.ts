@@ -17,6 +17,7 @@ const makeEntry = (type: "clock_in" | "clock_out", timestamp: string): ClockEntr
   longitude: null,
   is_manual: false,
   manual_remarks: null,
+  attachment_url: null,
   date: "2026-04-13",
   created_at: timestamp,
 });

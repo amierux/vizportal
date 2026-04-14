@@ -1687,7 +1687,6 @@ export type Database = {
         };
         Relationships: [];
       };
-    };
       forms: {
         Row: {
           id: string;
