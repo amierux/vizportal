@@ -807,8 +807,10 @@ export async function handleRecurringTaskCompletion(taskId: string) {
   if (taskError || !newTask) return;
 
   // Carry over unchecked checklist items
-  if (carryChecklist && task.workspace_task_checklists?.length) {
-    for (const checklist of task.workspace_task_checklists) {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const checklists: any[] = (task as any).workspace_task_checklists ?? [];
+  if (carryChecklist && checklists.length) {
+    for (const checklist of checklists) {
       const { data: newChecklist } = await supabase
         .from("workspace_task_checklists")
         .insert({ task_id: newTask.id, name: checklist.name, position: checklist.position })
@@ -816,10 +818,12 @@ export async function handleRecurringTaskCompletion(taskId: string) {
         .single();
 
       if (newChecklist) {
-        const uncheckedItems = checklist.workspace_checklist_items.filter((i) => !i.is_checked);
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const uncheckedItems = (checklist.workspace_checklist_items as any[]).filter((i: any) => !i.is_checked);
         if (uncheckedItems.length > 0) {
           await supabase.from("workspace_checklist_items").insert(
-            uncheckedItems.map((item) => ({
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            uncheckedItems.map((item: any) => ({
               checklist_id: newChecklist.id,
               name: item.name,
               is_checked: false,
@@ -835,10 +839,8 @@ export async function handleRecurringTaskCompletion(taskId: string) {
   if (carrySubtasks) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const subtasks = (task as any).workspace_tasks ?? [];
-    const incompleteSubtasks = subtasks.filter((s: { status_id: string }) => {
-      // We don't easily know is_done here, just copy all subtasks that aren't the done status
-      return true; // Copy all — filtering by is_done would require extra queries
-    });
+    // Copy all subtasks — filtering by is_done would require extra queries per subtask
+    const incompleteSubtasks = subtasks;
 
     if (incompleteSubtasks.length > 0) {
       await supabase.from("workspace_tasks").insert(
