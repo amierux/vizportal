@@ -2,9 +2,6 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getForms } from "@/lib/actions/forms";
 import { FormListTable } from "@/components/forms/form-list-table";
-import type { RoleName } from "@/types";
-
-const ADMIN_ROLES: RoleName[] = ["admin", "hr"];
 
 export default async function FormsPage() {
   const supabase = await createClient();
@@ -13,20 +10,6 @@ export default async function FormsPage() {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
-
-  // Fetch roles and enforce admin/HR gate
-  const { data: userRoles } = await supabase
-    .from("user_roles")
-    .select("roles(name)")
-    .eq("profile_id", user.id);
-
-  const roles: RoleName[] = (userRoles ?? []).map(
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (ur: any) => ur.roles.name
-  );
-
-  const isAdminOrHr = roles.some((r) => ADMIN_ROLES.includes(r));
-  if (!isAdminOrHr) redirect("/forms/my-forms");
 
   const forms = await getForms();
 
