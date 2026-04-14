@@ -20,11 +20,9 @@ import {
 import { toast } from "sonner";
 import { Plus, X, Copy, Globe, GripVertical } from "lucide-react";
 
-type ApproverEntry = {
-  profile_id: string;
-  name: string;
-  email: string;
-};
+type ApproverEntry =
+  | { type: "user"; profile_id: string; name: string; email: string }
+  | { type: "external"; email: string; name: string };
 
 type FormSettingsPanelProps = {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -48,14 +46,24 @@ function deriveInitialApprovers(form: Record<string, unknown>): ApproverEntry[] 
     : [];
   return approvers
     .sort((a, b) => a.step_order - b.step_order)
-    .map((a) => ({
-      profile_id: a.profile_id,
-      name: a.profiles
-        ? [a.profiles.first_name, a.profiles.last_name].filter(Boolean).join(" ") ||
-          a.profiles.email
-        : a.profile_id,
-      email: a.profiles?.email ?? "",
-    }));
+    .map((a): ApproverEntry => {
+      if (a.profile_id) {
+        return {
+          type: "user",
+          profile_id: a.profile_id,
+          name: a.profiles
+            ? [a.profiles.first_name, a.profiles.last_name].filter(Boolean).join(" ") ||
+              a.profiles.email
+            : a.profile_id,
+          email: a.profiles?.email ?? "",
+        };
+      }
+      return {
+        type: "external",
+        email: a.approver_email ?? "",
+        name: a.approver_name ?? a.approver_email ?? "",
+      };
+    });
 }
 
 export function FormSettingsPanel({ form, workspaceLists, departments, profiles }: FormSettingsPanelProps) {
@@ -63,7 +71,7 @@ export function FormSettingsPanel({ form, workspaceLists, departments, profiles 
 
   // Approval
   const [approvalEnabled, setApprovalEnabled] = useState<boolean>(form.approval_enabled ?? false);
-  const [approvalMode, setApprovalMode] = useState<"hierarchical" | "any_one">(
+  const [approvalMode, setApprovalMode] = useState<"hierarchical" | "any_one" | "any_order">(
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (form.form_approval_configs as any)?.approval_mode ?? "hierarchical"
   );
@@ -94,8 +102,10 @@ export function FormSettingsPanel({ form, workspaceLists, departments, profiles 
     if (state && "error" in state) toast.error((state as { error: string }).error);
   }, [state]);
 
-  // Filtered profile list (exclude already-added approvers)
-  const addedIds = new Set(approvers.map((a) => a.profile_id));
+  // Filtered profile list (exclude already-added internal approvers)
+  const addedIds = new Set(
+    approvers.filter((a): a is Extract<ApproverEntry, { type: "user" }> => a.type === "user").map((a) => a.profile_id)
+  );
   const filteredProfiles = profiles.filter((p) => {
     if (addedIds.has(p.id)) return false;
     if (!approverSearch) return true;
@@ -106,15 +116,28 @@ export function FormSettingsPanel({ form, workspaceLists, departments, profiles 
     );
   });
 
+  // External approver form state
+  const [extName, setExtName] = useState("");
+  const [extEmail, setExtEmail] = useState("");
+
   function addApprover(profile: { id: string; first_name: string | null; last_name: string | null; email: string }) {
     const name =
       [profile.first_name, profile.last_name].filter(Boolean).join(" ") || profile.email;
-    setApprovers((prev) => [...prev, { profile_id: profile.id, name, email: profile.email }]);
+    setApprovers((prev) => [...prev, { type: "user", profile_id: profile.id, name, email: profile.email }]);
     setApproverSearch("");
   }
 
-  function removeApprover(profileId: string) {
-    setApprovers((prev) => prev.filter((a) => a.profile_id !== profileId));
+  function addExternalApprover() {
+    const trimEmail = extEmail.trim();
+    const trimName = extName.trim();
+    if (!trimEmail) return;
+    setApprovers((prev) => [...prev, { type: "external", email: trimEmail, name: trimName || trimEmail }]);
+    setExtName("");
+    setExtEmail("");
+  }
+
+  function removeApprover(index: number) {
+    setApprovers((prev) => prev.filter((_, i) => i !== index));
   }
 
   function toggleScheduleTargetId(id: string) {
@@ -131,8 +154,8 @@ export function FormSettingsPanel({ form, workspaceLists, departments, profiles 
         <input type="hidden" name="approval_mode" value={approvalMode} />
         <input
           type="hidden"
-          name="approval_approver_ids"
-          value={JSON.stringify(approvers.map((a) => a.profile_id))}
+          name="approvers"
+          value={JSON.stringify(approvers)}
         />
         <input type="hidden" name="save_to_list_enabled" value={String(saveToListEnabled)} />
         <input type="hidden" name="target_list_id" value={targetListId} />
@@ -209,6 +232,17 @@ export function FormSettingsPanel({ form, workspaceLists, departments, profiles 
                     />
                     <span className="text-sm">Any One — any single approver can approve</span>
                   </label>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="_approval_mode_ui"
+                      value="any_order"
+                      checked={approvalMode === "any_order"}
+                      onChange={() => setApprovalMode("any_order")}
+                      className="accent-primary"
+                    />
+                    <span className="text-sm">Any Order — all approvers must approve, order doesn&apos;t matter</span>
+                  </label>
                 </div>
               </div>
 
@@ -223,13 +257,18 @@ export function FormSettingsPanel({ form, workspaceLists, departments, profiles 
                 <div className="space-y-1.5">
                   {approvers.map((approver, index) => (
                     <div
-                      key={approver.profile_id}
+                      key={index}
                       className="flex items-center gap-2 px-3 py-2 rounded-md border bg-muted/30"
                     >
                       <GripVertical className="h-4 w-4 text-muted-foreground flex-shrink-0" />
                       {approvalMode === "hierarchical" && (
                         <Badge variant="outline" className="text-xs flex-shrink-0">
                           Step {index + 1}
+                        </Badge>
+                      )}
+                      {approver.type === "external" && (
+                        <Badge variant="secondary" className="text-xs flex-shrink-0">
+                          External
                         </Badge>
                       )}
                       <div className="flex-1 min-w-0">
@@ -241,7 +280,7 @@ export function FormSettingsPanel({ form, workspaceLists, departments, profiles 
                         variant="ghost"
                         size="icon"
                         className="h-6 w-6 text-muted-foreground hover:text-destructive flex-shrink-0"
-                        onClick={() => removeApprover(approver.profile_id)}
+                        onClick={() => removeApprover(index)}
                       >
                         <X className="h-3.5 w-3.5" />
                       </Button>
@@ -250,9 +289,9 @@ export function FormSettingsPanel({ form, workspaceLists, departments, profiles 
                 </div>
               </div>
 
-              {/* Add Approver */}
+              {/* Add Internal Approver */}
               <div className="space-y-1.5">
-                <Label className="text-sm">Add Approver</Label>
+                <Label className="text-sm">Add User Approver</Label>
                 <Input
                   placeholder="Search by name or email..."
                   value={approverSearch}
@@ -285,6 +324,41 @@ export function FormSettingsPanel({ form, workspaceLists, departments, profiles 
                 {approverSearch && filteredProfiles.length === 0 && (
                   <p className="text-xs text-muted-foreground px-1">No matching profiles found.</p>
                 )}
+              </div>
+
+              <Separator />
+
+              {/* Add External Approver */}
+              <div className="space-y-1.5">
+                <Label className="text-sm">Add External Approver</Label>
+                <p className="text-xs text-muted-foreground">
+                  Send approval requests to someone outside VizPortal via email.
+                </p>
+                <div className="flex gap-2">
+                  <Input
+                    placeholder="Name"
+                    value={extName}
+                    onChange={(e) => setExtName(e.target.value)}
+                    className="text-sm"
+                  />
+                  <Input
+                    placeholder="Email address"
+                    type="email"
+                    value={extEmail}
+                    onChange={(e) => setExtEmail(e.target.value)}
+                    className="text-sm"
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    onClick={addExternalApprover}
+                    disabled={!extEmail.trim()}
+                    className="flex-shrink-0"
+                  >
+                    <Plus className="h-4 w-4" />
+                  </Button>
+                </div>
               </div>
             </CardContent>
           )}

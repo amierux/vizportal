@@ -1484,16 +1484,16 @@ export type Database = {
         Row: {
           id: string;
           status_id: string;
-          approval_mode: "hierarchical" | "any_one";
+          approval_mode: "hierarchical" | "any_one" | "any_order";
           created_at: string;
         };
         Insert: {
           id?: string;
           status_id: string;
-          approval_mode: "hierarchical" | "any_one";
+          approval_mode: "hierarchical" | "any_one" | "any_order";
         };
         Update: {
-          approval_mode?: "hierarchical" | "any_one";
+          approval_mode?: "hierarchical" | "any_one" | "any_order";
         };
         Relationships: [];
       };
@@ -1876,17 +1876,17 @@ export type Database = {
         Row: {
           id: string;
           form_id: string;
-          approval_mode: "hierarchical" | "any_one";
+          approval_mode: "hierarchical" | "any_one" | "any_order";
           created_at: string;
           updated_at: string;
         };
         Insert: {
           id?: string;
           form_id: string;
-          approval_mode?: "hierarchical" | "any_one";
+          approval_mode?: "hierarchical" | "any_one" | "any_order";
         };
         Update: {
-          approval_mode?: "hierarchical" | "any_one";
+          approval_mode?: "hierarchical" | "any_one" | "any_order";
         };
         Relationships: [];
       };
@@ -1894,18 +1894,25 @@ export type Database = {
         Row: {
           id: string;
           form_approval_config_id: string;
-          profile_id: string;
+          profile_id: string | null;
+          approver_email: string | null;
+          approver_name: string | null;
           step_order: number;
           created_at: string;
         };
         Insert: {
           id?: string;
           form_approval_config_id: string;
-          profile_id: string;
+          profile_id?: string | null;
+          approver_email?: string | null;
+          approver_name?: string | null;
           step_order: number;
         };
         Update: {
           step_order?: number;
+          profile_id?: string | null;
+          approver_email?: string | null;
+          approver_name?: string | null;
         };
         Relationships: [];
       };
@@ -1914,14 +1921,14 @@ export type Database = {
           id: string;
           submission_id: string;
           status: "pending" | "approved" | "rejected";
-          approval_mode: "hierarchical" | "any_one";
+          approval_mode: "hierarchical" | "any_one" | "any_order";
           created_at: string;
         };
         Insert: {
           id?: string;
           submission_id: string;
           status?: "pending" | "approved" | "rejected";
-          approval_mode: "hierarchical" | "any_one";
+          approval_mode: "hierarchical" | "any_one" | "any_order";
         };
         Update: {
           status?: "pending" | "approved" | "rejected";
@@ -1932,7 +1939,10 @@ export type Database = {
         Row: {
           id: string;
           submission_approval_id: string;
-          approver_id: string;
+          approver_id: string | null;
+          approver_email: string | null;
+          approver_name: string | null;
+          token: string;
           step_order: number;
           status: "pending" | "approved" | "rejected";
           comment: string | null;
@@ -1942,7 +1952,10 @@ export type Database = {
         Insert: {
           id?: string;
           submission_approval_id: string;
-          approver_id: string;
+          approver_id?: string | null;
+          approver_email?: string | null;
+          approver_name?: string | null;
+          token?: string;
           step_order: number;
           status?: "pending" | "approved" | "rejected";
           comment?: string | null;
@@ -1952,6 +1965,9 @@ export type Database = {
           status?: "pending" | "approved" | "rejected";
           comment?: string | null;
           decided_at?: string | null;
+          approver_id?: string | null;
+          approver_email?: string | null;
+          approver_name?: string | null;
         };
         Relationships: [];
       };

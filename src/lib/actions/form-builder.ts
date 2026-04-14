@@ -439,17 +439,13 @@ export async function updateFormSettings(_prevState: unknown, formData: FormData
   if (parsed.data.approval_enabled) {
     // Parse new v2 approval fields
     const approvalMode =
-      (formData.get("approval_mode") as "hierarchical" | "any_one") ?? "hierarchical";
-    const approverIdsRaw = formData.get("approval_approver_ids") as string | null;
-    let approverIds: string[] = [];
+      (formData.get("approval_mode") as "hierarchical" | "any_one" | "any_order") ?? "hierarchical";
+    const approversJson = formData.get("approvers") as string | null;
+    let approversList: Array<{ type: string; profile_id?: string; email?: string; name?: string }> = [];
 
-    if (approverIdsRaw) {
-      try {
-        approverIds = JSON.parse(approverIdsRaw);
-      } catch {
-        return { error: "Invalid approval_approver_ids JSON" };
-      }
-    }
+    try {
+      approversList = JSON.parse(approversJson || "[]");
+    } catch { /* empty */ }
 
     // Upsert approval config
     const { data: existingConfig } = await supabase
@@ -486,16 +482,26 @@ export async function updateFormSettings(_prevState: unknown, formData: FormData
       configId = newConfig.id;
     }
 
-    // Insert new user-based approvers
-    if (approverIds.length > 0) {
-      const approverInserts = approverIds.map((profileId, index) => ({
-        form_approval_config_id: configId,
-        profile_id: profileId,
-        step_order: index + 1,
-      }));
-
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      await (supabase as any).from("form_approvers").insert(approverInserts);
+    // Insert approvers (both internal and external)
+    for (let i = 0; i < approversList.length; i++) {
+      const a = approversList[i];
+      if (a.type === "user" && a.profile_id) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        await (supabase as any).from("form_approvers").insert({
+          form_approval_config_id: configId,
+          profile_id: a.profile_id,
+          step_order: i + 1,
+        });
+      } else if (a.type === "external" && a.email) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        await (supabase as any).from("form_approvers").insert({
+          form_approval_config_id: configId,
+          profile_id: null,
+          approver_email: a.email,
+          approver_name: a.name ?? null,
+          step_order: i + 1,
+        });
+      }
     }
   } else {
     // Remove approval config if disabled
