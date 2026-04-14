@@ -2,6 +2,7 @@
 
 import { usePathname } from "next/navigation";
 import { ThemeToggle } from "@/components/layout/theme-toggle";
+import { NotificationBell } from "@/components/notifications/notification-bell";
 import { buttonVariants } from "@/components/ui/button";
 import { Menu } from "lucide-react";
 import {
@@ -102,6 +103,7 @@ export function Header({ userRoles }: HeaderProps) {
       <h1 className="text-lg font-semibold">{getPageTitle(pathname)}</h1>
 
       <div className="flex items-center gap-2">
+        <NotificationBell />
         <ThemeToggle />
       </div>
     </header>
