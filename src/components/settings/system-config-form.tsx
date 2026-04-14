@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { toast } from "sonner";
-import { Eye, EyeOff, Mail, Shield } from "lucide-react";
+import { Eye, EyeOff, Shield } from "lucide-react";
 import type { SystemSetting } from "@/types";
 
 type SystemConfigFormProps = {
@@ -33,11 +33,8 @@ export function SystemConfigForm({ settings }: SystemConfigFormProps) {
     setRevealed((prev) => ({ ...prev, [key]: !prev[key] }));
   }
 
-  const emailSettings = SETTING_KEYS.filter(
-    (s) => s.key === "resend_api_key" || s.key === "email_sender_address" || s.key === "email_sender_name"
-  );
   const securitySettings = SETTING_KEYS.filter(
-    (s) => s.key === "cron_secret" || s.key === "app_url"
+    (s) => s.key === "cron_secret"
   );
 
   function renderField(setting: (typeof SETTING_KEYS)[number]) {
@@ -80,26 +77,11 @@ export function SystemConfigForm({ settings }: SystemConfigFormProps) {
       <Card>
         <CardHeader>
           <div className="flex items-center gap-2">
-            <Mail className="h-5 w-5" />
-            <CardTitle className="text-base">Email Configuration</CardTitle>
-          </div>
-          <CardDescription>
-            Configure the email service used for approval notifications.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {emailSettings.map(renderField)}
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <div className="flex items-center gap-2">
             <Shield className="h-5 w-5" />
             <CardTitle className="text-base">Security</CardTitle>
           </div>
           <CardDescription>
-            Cron job authentication and application URL for email links.
+            Cron job authentication secret for scheduled tasks.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
