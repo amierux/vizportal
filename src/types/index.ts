@@ -56,6 +56,13 @@ export type TimesheetSettings = Database["public"]["Tables"]["timesheet_settings
 export type TimesheetApprovalConfig = Database["public"]["Tables"]["timesheet_approval_configs"]["Row"];
 export type TimesheetApprovalStep = Database["public"]["Tables"]["timesheet_approval_steps"]["Row"];
 export type TimesheetSubmission = Database["public"]["Tables"]["timesheet_submissions"]["Row"];
+export type Form = Database["public"]["Tables"]["forms"]["Row"];
+export type FormSection = Database["public"]["Tables"]["form_sections"]["Row"];
+export type FormField = Database["public"]["Tables"]["form_fields"]["Row"];
+export type FormSubmission = Database["public"]["Tables"]["form_submissions"]["Row"];
+export type FormAssignment = Database["public"]["Tables"]["form_assignments"]["Row"];
+export type FormApprovalConfig = Database["public"]["Tables"]["form_approval_configs"]["Row"];
+export type FormApprovalStep = Database["public"]["Tables"]["form_approval_steps"]["Row"];
 
 export type ApprovalType = "manual_clock" | "leave_request";
 export type AttendanceStatus = "present" | "late" | "absent" | "half_day" | "on_leave";

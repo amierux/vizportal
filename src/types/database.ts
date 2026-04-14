@@ -1688,6 +1688,229 @@ export type Database = {
         Relationships: [];
       };
     };
+      forms: {
+        Row: {
+          id: string;
+          company_id: string;
+          name: string;
+          description: string | null;
+          status: "draft" | "published" | "archived";
+          created_by: string;
+          is_public: boolean;
+          public_token: string;
+          approval_enabled: boolean;
+          save_to_list_enabled: boolean;
+          target_list_id: string | null;
+          schedule_enabled: boolean;
+          schedule_cron: string | null;
+          schedule_target: "all_employees" | "department" | "specific" | null;
+          schedule_target_ids: string[];
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          company_id: string;
+          name: string;
+          description?: string | null;
+          status?: "draft" | "published" | "archived";
+          created_by: string;
+          is_public?: boolean;
+          public_token?: string;
+          approval_enabled?: boolean;
+          save_to_list_enabled?: boolean;
+          target_list_id?: string | null;
+          schedule_enabled?: boolean;
+          schedule_cron?: string | null;
+          schedule_target?: "all_employees" | "department" | "specific" | null;
+          schedule_target_ids?: string[];
+        };
+        Update: {
+          name?: string;
+          description?: string | null;
+          status?: "draft" | "published" | "archived";
+          is_public?: boolean;
+          approval_enabled?: boolean;
+          save_to_list_enabled?: boolean;
+          target_list_id?: string | null;
+          schedule_enabled?: boolean;
+          schedule_cron?: string | null;
+          schedule_target?: "all_employees" | "department" | "specific" | null;
+          schedule_target_ids?: string[];
+        };
+        Relationships: [];
+      };
+      form_sections: {
+        Row: {
+          id: string;
+          form_id: string;
+          name: string;
+          description: string | null;
+          position: number;
+          condition: unknown | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          form_id: string;
+          name: string;
+          description?: string | null;
+          position: number;
+          condition?: unknown | null;
+        };
+        Update: {
+          name?: string;
+          description?: string | null;
+          position?: number;
+          condition?: unknown | null;
+        };
+        Relationships: [];
+      };
+      form_fields: {
+        Row: {
+          id: string;
+          section_id: string;
+          form_id: string;
+          name: string;
+          label: string;
+          type: "text" | "number" | "date" | "textarea" | "select" | "multi_select" | "checkbox" | "radio" | "file" | "signature" | "email" | "phone" | "calculated";
+          position: number;
+          is_required: boolean;
+          placeholder: string | null;
+          help_text: string | null;
+          options: unknown;
+          validation_rules: unknown;
+          conditional_logic: unknown;
+          default_value: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          section_id: string;
+          form_id: string;
+          name: string;
+          label: string;
+          type: "text" | "number" | "date" | "textarea" | "select" | "multi_select" | "checkbox" | "radio" | "file" | "signature" | "email" | "phone" | "calculated";
+          position: number;
+          is_required?: boolean;
+          placeholder?: string | null;
+          help_text?: string | null;
+          options?: unknown;
+          validation_rules?: unknown;
+          conditional_logic?: unknown;
+          default_value?: string | null;
+        };
+        Update: {
+          name?: string;
+          label?: string;
+          type?: "text" | "number" | "date" | "textarea" | "select" | "multi_select" | "checkbox" | "radio" | "file" | "signature" | "email" | "phone" | "calculated";
+          position?: number;
+          is_required?: boolean;
+          placeholder?: string | null;
+          help_text?: string | null;
+          options?: unknown;
+          validation_rules?: unknown;
+          conditional_logic?: unknown;
+          default_value?: string | null;
+        };
+        Relationships: [];
+      };
+      form_submissions: {
+        Row: {
+          id: string;
+          form_id: string;
+          company_id: string;
+          submitted_by: string | null;
+          respondent_name: string | null;
+          respondent_email: string | null;
+          status: "draft" | "submitted" | "approved" | "rejected";
+          data: unknown;
+          saved_to_list: boolean;
+          workspace_task_id: string | null;
+          submitted_at: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          form_id: string;
+          company_id: string;
+          submitted_by?: string | null;
+          respondent_name?: string | null;
+          respondent_email?: string | null;
+          status?: "draft" | "submitted" | "approved" | "rejected";
+          data?: unknown;
+          saved_to_list?: boolean;
+          workspace_task_id?: string | null;
+          submitted_at?: string | null;
+        };
+        Update: {
+          status?: "draft" | "submitted" | "approved" | "rejected";
+          data?: unknown;
+          saved_to_list?: boolean;
+          workspace_task_id?: string | null;
+          submitted_at?: string | null;
+        };
+        Relationships: [];
+      };
+      form_assignments: {
+        Row: {
+          id: string;
+          form_id: string;
+          profile_id: string;
+          assigned_at: string;
+          completed: boolean;
+        };
+        Insert: {
+          id?: string;
+          form_id: string;
+          profile_id: string;
+          assigned_at?: string;
+          completed?: boolean;
+        };
+        Update: {
+          completed?: boolean;
+        };
+        Relationships: [];
+      };
+      form_approval_configs: {
+        Row: {
+          id: string;
+          form_id: string;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          form_id: string;
+        };
+        Update: Record<string, never>;
+        Relationships: [];
+      };
+      form_approval_steps: {
+        Row: {
+          id: string;
+          form_approval_config_id: string;
+          step_order: number;
+          role: string;
+          is_optional: boolean;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          form_approval_config_id: string;
+          step_order: number;
+          role: string;
+          is_optional?: boolean;
+        };
+        Update: {
+          step_order?: number;
+          role?: string;
+          is_optional?: boolean;
+        };
+        Relationships: [];
+      };
+    };
     Views: Record<string, never>;
     Functions: {
       get_user_company_id: {

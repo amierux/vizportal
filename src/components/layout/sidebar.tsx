@@ -17,6 +17,7 @@ import {
   Wallet,
   LayoutGrid,
   ClipboardList,
+  FileText,
 } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
@@ -47,6 +48,7 @@ const NAV_ITEMS: NavItem[] = [
     icon: Users,
     roles: [],
   },
+  { label: "Forms", href: "/forms/my-forms", icon: FileText, roles: [] },
   { label: "Workspace", href: "/workspace", icon: LayoutGrid, roles: [] },
   { label: "Attendance", href: "/attendance", icon: Clock, roles: [] },
   { label: "Leave", href: "/leave", icon: CalendarDays, roles: [] },

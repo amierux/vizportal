@@ -40,6 +40,9 @@ export const ROUTE_ROLE_MAP: Record<string, RoleName[]> = {
   "/settings/workspace": ["admin"],
   "/timesheet": [],
   "/settings/timesheet": ["admin"],
+  "/forms": ["admin", "hr"],
+  "/forms/my-forms": [],
+  "/settings/forms": ["admin"],
 };
 
 export const EMPLOYMENT_STATUSES = [

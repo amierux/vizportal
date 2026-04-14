@@ -50,6 +50,9 @@ function getPageTitle(pathname: string): string {
     "/settings/workspace": "Workspace Settings",
     "/timesheet": "Timesheet",
     "/settings/timesheet": "Timesheet Settings",
+    "/forms": "Forms",
+    "/forms/my-forms": "My Forms",
+    "/settings/forms": "Form Settings",
   };
   return map[pathname] ?? "VizPortal";
 }
