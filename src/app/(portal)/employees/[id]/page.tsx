@@ -160,9 +160,9 @@ export default async function EmployeeDetailPage({
 
         {isAdminOrHr && (
           <TabsContent value="leave">
-            {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
             <EmployeeLeaveTab
               profileId={id}
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
               balances={leaveBalances as any}
             />
           </TabsContent>

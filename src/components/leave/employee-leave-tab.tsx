@@ -56,7 +56,7 @@ export function EmployeeLeaveTab({ profileId, balances }: EmployeeLeaveTabProps)
   async function handleAllocateAll() {
     setBulkLoading(true);
     const result = await allocateAllLeaveBalances(profileId);
-    if ("error" in result) toast.error(result.error);
+    if ("error" in result) toast.error(result.error as string);
     else toast.success(`${result.allocated} balance(s) allocated`);
     setBulkLoading(false);
   }
