@@ -1,0 +1,16 @@
+{
+  "crons": [
+    {
+      "path": "/api/cron/approval-reminders",
+      "schedule": "0 1 * * *"
+    },
+    {
+      "path": "/api/cron/mark-absences",
+      "schedule": "59 15 * * *"
+    },
+    {
+      "path": "/api/cron/leave-reset",
+      "schedule": "0 16 * * *"
+    }
+  ]
+}
