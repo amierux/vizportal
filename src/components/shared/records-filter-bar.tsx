@@ -32,6 +32,7 @@ type RecordsFilterBarProps = {
   onExportCsv: () => void;
   onExportPdf: () => void;
   showDepartmentFilter?: boolean;
+  showNameSearch?: boolean;
 };
 
 export function RecordsFilterBar({
@@ -40,6 +41,7 @@ export function RecordsFilterBar({
   onExportCsv,
   onExportPdf,
   showDepartmentFilter = true,
+  showNameSearch = true,
 }: RecordsFilterBarProps) {
   // Default to current month
   const now = new Date();
@@ -77,18 +79,20 @@ export function RecordsFilterBar({
           className="w-auto"
         />
       </div>
-      <div className="space-y-1 flex-1 min-w-[150px]">
-        <Label className="text-xs">Search Name</Label>
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            placeholder="Search employee..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="pl-9"
-          />
+      {showNameSearch && (
+        <div className="space-y-1 flex-1 min-w-[150px]">
+          <Label className="text-xs">Search Name</Label>
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              placeholder="Search employee..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="pl-9"
+            />
+          </div>
         </div>
-      </div>
+      )}
       {showDepartmentFilter && (
         <div className="space-y-1">
           <Label className="text-xs">Department</Label>

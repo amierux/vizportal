@@ -140,6 +140,7 @@ export function AttendanceRecords({ userRoles, departments }: AttendanceRecordsP
               onExportCsv={exportCsv}
               onExportPdf={exportPdf}
               showDepartmentFilter={scope !== "personal"}
+              showNameSearch={scope !== "personal"}
             />
 
             {loading ? (

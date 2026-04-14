@@ -139,6 +139,7 @@ export function LeaveRecords({ userRoles, departments }: LeaveRecordsProps) {
               onExportCsv={exportCsv}
               onExportPdf={exportPdf}
               showDepartmentFilter={scope !== "personal"}
+              showNameSearch={scope !== "personal"}
             />
 
             {loading ? (
