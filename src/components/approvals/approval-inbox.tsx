@@ -53,12 +53,13 @@ export function ApprovalInbox({ approvals }: ApprovalInboxProps) {
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 animate-fade-in-up">
       <div className="flex items-center justify-between">
         <h2 className="text-lg font-semibold">Pending Approvals</h2>
         <Badge variant="secondary">{approvals.length}</Badge>
       </div>
 
+      <div className="space-y-4 animate-stagger">
       {approvals.map((step) => {
         const request = step.approval_requests;
         const requester = request?.requester;
@@ -69,7 +70,7 @@ export function ApprovalInbox({ approvals }: ApprovalInboxProps) {
         const isExpanded = expandedId === step.id;
 
         return (
-          <Card key={step.id}>
+          <Card key={step.id} className="card-hover">
             <CardHeader
               className="cursor-pointer"
               onClick={() => setExpandedId(isExpanded ? null : step.id)}
@@ -129,6 +130,7 @@ export function ApprovalInbox({ approvals }: ApprovalInboxProps) {
           </Card>
         );
       })}
+      </div>
     </div>
   );
 }

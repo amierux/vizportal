@@ -25,7 +25,7 @@ export function RoleTable({ roles }: RoleTableProps) {
               </TableRow>
             )}
             {roles.map((role) => (
-              <TableRow key={role.id}>
+              <TableRow key={role.id} className="row-hover">
                 <TableCell className="font-medium">
                   {ROLE_NAMES[role.name as keyof typeof ROLE_NAMES] ?? role.name}
                 </TableCell>

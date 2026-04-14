@@ -86,7 +86,7 @@ export default async function EmployeeDetailPage({
     : [];
 
   return (
-    <div className="mx-auto max-w-3xl">
+    <div className="mx-auto max-w-3xl animate-fade-in-up">
       <h2 className="mb-6 text-xl font-semibold">
         {formatFullName(employee.first_name, employee.last_name)}
       </h2>
@@ -99,7 +99,7 @@ export default async function EmployeeDetailPage({
           {isAdminOrHr && <TabsTrigger value="leave">Leave</TabsTrigger>}
         </TabsList>
 
-        <TabsContent value="personal">
+        <TabsContent value="personal" className="animate-fade-in">
           <PersonalInfoTab
             profileId={id}
             data={{
@@ -123,7 +123,7 @@ export default async function EmployeeDetailPage({
           />
         </TabsContent>
 
-        <TabsContent value="employment">
+        <TabsContent value="employment" className="animate-fade-in">
           <EmploymentTab
             profileId={id}
             data={{
@@ -149,7 +149,7 @@ export default async function EmployeeDetailPage({
           />
         </TabsContent>
 
-        <TabsContent value="documents">
+        <TabsContent value="documents" className="animate-fade-in">
           <DocumentsTab
             profileId={id}
             documents={documents ?? []}
@@ -159,7 +159,7 @@ export default async function EmployeeDetailPage({
         </TabsContent>
 
         {isAdminOrHr && (
-          <TabsContent value="leave">
+          <TabsContent value="leave" className="animate-fade-in">
             <EmployeeLeaveTab
               profileId={id}
               // eslint-disable-next-line @typescript-eslint/no-explicit-any

@@ -25,7 +25,7 @@ export function TodaySessions({ entries, requiredHours }: TodaySessionsProps) {
   }
 
   return (
-    <Card>
+    <Card className="card-hover">
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <CardTitle className="text-base">Today&apos;s Sessions</CardTitle>

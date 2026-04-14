@@ -48,22 +48,24 @@ export default async function LeavePage() {
     .order("first_name");
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 animate-fade-in-up">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">My Leave</h1>
         <LeaveRequestForm leaveTypes={leaveTypes} users={activeProfiles ?? []} />
       </div>
 
-      <div>
-        <h2 className="mb-3 text-lg font-semibold">Leave Balances</h2>
-        {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-        <BalanceCards balances={balances as any} />
-      </div>
+      <div className="grid gap-6 lg:grid-cols-2">
+        <div>
+          <h2 className="mb-3 text-lg font-semibold">Leave Balances</h2>
+          {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+          <BalanceCards balances={balances as any} />
+        </div>
 
-      <div>
-        <h2 className="mb-3 text-lg font-semibold">My Requests</h2>
-        {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-        <LeaveRequestsTable requests={requests as any} />
+        <div>
+          <h2 className="mb-3 text-lg font-semibold">My Requests</h2>
+          {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+          <LeaveRequestsTable requests={requests as any} />
+        </div>
       </div>
 
       <Separator />

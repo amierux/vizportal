@@ -151,7 +151,7 @@ export function InvitationForm({ invitations, departments, jobLevels, roles }: I
               </TableRow>
             )}
             {invitations.map((inv) => (
-              <TableRow key={inv.id}>
+              <TableRow key={inv.id} className="row-hover">
                 <TableCell>{inv.email}</TableCell>
                 <TableCell>{inv.job_position ?? "—"}</TableCell>
                 <TableCell>

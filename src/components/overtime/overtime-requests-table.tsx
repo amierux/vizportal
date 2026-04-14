@@ -66,7 +66,7 @@ export function OvertimeRequestsTable({ requests }: OvertimeRequestsTableProps) 
           </TableRow>
         ) : (
           requests.map((req) => (
-            <TableRow key={req.id}>
+            <TableRow key={req.id} className="row-hover">
               <TableCell>{formatDate(req.date)}</TableCell>
               <TableCell>
                 {req.start_time} — {req.end_time}

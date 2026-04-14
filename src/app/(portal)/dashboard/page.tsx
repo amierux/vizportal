@@ -19,7 +19,7 @@ export default async function DashboardPage() {
     : "there";
 
   return (
-    <div>
+    <div className="animate-fade-in-up">
       <h2 className="text-2xl font-bold">Welcome, {name}</h2>
       <p className="mt-2 text-muted-foreground">
         This is your VizPortal dashboard. More analytics coming in Phase 4.

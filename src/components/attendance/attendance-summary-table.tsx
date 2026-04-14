@@ -91,7 +91,7 @@ export function AttendanceSummaryTable({ rows }: AttendanceSummaryTableProps) {
             </TableRow>
           ) : (
             rows.map((row) => (
-              <TableRow key={row.profileId}>
+              <TableRow key={row.profileId} className="row-hover">
                 <TableCell>{row.name}</TableCell>
                 <TableCell>{row.department}</TableCell>
                 <TableCell className="text-right">{row.daysPresent}</TableCell>

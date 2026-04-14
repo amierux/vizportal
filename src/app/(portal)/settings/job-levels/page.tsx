@@ -15,5 +15,9 @@ export default async function JobLevelsPage() {
     .eq("company_id", profile!.company_id)
     .order("rank");
 
-  return <JobLevelTable jobLevels={jobLevels ?? []} />;
+  return (
+    <div className="animate-fade-in-up">
+      <JobLevelTable jobLevels={jobLevels ?? []} />
+    </div>
+  );
 }

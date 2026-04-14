@@ -24,11 +24,11 @@ export function BalanceCards({ balances }: BalanceCardsProps) {
   }
 
   return (
-    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 animate-stagger">
       {balances.map((b) => {
         const pct = b.total_days > 0 ? (b.used_days / b.total_days) * 100 : 0;
         return (
-          <Card key={b.id}>
+          <Card key={b.id} className="card-hover">
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium">
                 {b.leave_types?.name ?? "Unknown"}{" "}

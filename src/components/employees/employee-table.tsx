@@ -135,7 +135,7 @@ export function EmployeeTable({
               </TableRow>
             )}
             {employees.map((emp) => (
-              <TableRow key={emp.id}>
+              <TableRow key={emp.id} className="row-hover">
                 <TableCell>
                   <Link
                     href={`/employees/${emp.id}`}
@@ -164,7 +164,7 @@ export function EmployeeTable({
           <Link
             key={emp.id}
             href={`/employees/${emp.id}`}
-            className="block rounded-lg border p-4 hover:bg-accent"
+            className="block rounded-lg border p-4 hover:bg-accent card-hover"
           >
             <div className="font-medium">
               {formatFullName(emp.first_name, emp.last_name)}

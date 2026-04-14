@@ -32,7 +32,7 @@ export default async function CompanySettingsPage() {
     .order("first_name");
 
   return (
-    <div className="mx-auto max-w-3xl space-y-8">
+    <div className="mx-auto max-w-3xl space-y-8 animate-fade-in-up">
       <div>
         <h2 className="text-xl font-semibold">Company Information</h2>
         <p className="text-sm text-muted-foreground">

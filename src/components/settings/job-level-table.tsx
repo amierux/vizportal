@@ -99,7 +99,7 @@ export function JobLevelTable({ jobLevels }: JobLevelTableProps) {
               </TableRow>
             )}
             {jobLevels.map((jl) => (
-              <TableRow key={jl.id}>
+              <TableRow key={jl.id} className="row-hover">
                 <TableCell className="font-mono font-medium">{jl.code}</TableCell>
                 <TableCell>{jl.name}</TableCell>
                 <TableCell>{jl.rank}</TableCell>

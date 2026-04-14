@@ -70,7 +70,7 @@ export function LeaveRequestsTable({ requests, showEmployee }: LeaveRequestsTabl
           </TableRow>
         ) : (
           requests.map((req) => (
-            <TableRow key={req.id}>
+            <TableRow key={req.id} className="row-hover">
               {showEmployee && (
                 <TableCell>
                   {

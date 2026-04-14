@@ -69,15 +69,15 @@ export default async function AttendancePage() {
     : null;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 animate-fade-in-up">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">My Attendance</h1>
         <ManualClockDialog />
       </div>
 
-      <div className="grid gap-6 md:grid-cols-2">
+      <div className="grid gap-6 md:grid-cols-2 animate-stagger">
         <div className="space-y-6">
-          <div className="rounded-lg border p-6">
+          <div className="rounded-lg border p-6 card-hover">
             <LiveClock />
             <div className="mt-6">
               <ClockButton

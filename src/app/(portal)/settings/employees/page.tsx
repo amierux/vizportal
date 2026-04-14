@@ -10,7 +10,7 @@ export default async function EmployeeSettingsPage() {
   ]);
 
   return (
-    <div className="mx-auto max-w-3xl space-y-6">
+    <div className="mx-auto max-w-3xl space-y-6 animate-fade-in-up">
       <h1 className="text-2xl font-bold">Employee Settings</h1>
 
       <div>

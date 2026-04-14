@@ -57,7 +57,7 @@ export function AttendanceTable({ rows }: AttendanceTableProps) {
           </TableRow>
         ) : (
           rows.map((row) => (
-            <TableRow key={row.id}>
+            <TableRow key={row.id} className="row-hover">
               <TableCell>
                 {row.profiles
                   ? formatFullName(row.profiles.first_name, row.profiles.last_name)

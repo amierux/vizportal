@@ -68,7 +68,7 @@ export default async function EmployeesPage({
     .order("name");
 
   return (
-    <div>
+    <div className="animate-fade-in-up">
       <EmployeeTable
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         employees={(employees as any) ?? []}

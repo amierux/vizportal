@@ -170,7 +170,7 @@ export function LeaveTypeTable({ leaveTypes }: LeaveTypeTableProps) {
         </TableHeader>
         <TableBody>
           {leaveTypes.map((t) => (
-            <TableRow key={t.id}>
+            <TableRow key={t.id} className="row-hover">
               <TableCell>{t.name}</TableCell>
               <TableCell><Badge variant="outline">{t.code}</Badge></TableCell>
               <TableCell>{t.default_days}</TableCell>

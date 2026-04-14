@@ -144,7 +144,7 @@ export function OvertimeRecords({ userRoles, departments }: OvertimeRecordsProps
         </RecordsFilterBar>
 
         {["personal", "team", "department", "all"].map((scope) => (
-          <TabsContent key={scope} value={scope}>
+          <TabsContent key={scope} value={scope} className="animate-fade-in">
             {loading ? (
               <p className="py-8 text-center text-muted-foreground">Loading...</p>
             ) : records.length === 0 ? (
@@ -168,7 +168,7 @@ export function OvertimeRecords({ userRoles, departments }: OvertimeRecordsProps
                 <TableBody>
                   {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
                   {records.map((r: any) => (
-                    <TableRow key={r.id}>
+                    <TableRow key={r.id} className="row-hover">
                       {showNameColumn && (
                         <TableCell>
                           {r.profiles?.first_name} {r.profiles?.last_name}

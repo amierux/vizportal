@@ -5,7 +5,7 @@ export default async function ApprovalsPage() {
   const pendingApprovals = await getMyPendingApprovals();
 
   return (
-    <div>
+    <div className="animate-fade-in-up">
       <ApprovalInbox approvals={pendingApprovals} />
     </div>
   );

@@ -107,7 +107,7 @@ export function NonWorkingDaysTable({ days }: NonWorkingDaysTableProps) {
             </TableRow>
           ) : (
             days.map((d) => (
-              <TableRow key={d.id}>
+              <TableRow key={d.id} className="row-hover">
                 <TableCell>{d.name}</TableCell>
                 <TableCell>{formatDate(d.date)}</TableCell>
                 <TableCell><Badge variant="outline">{d.country}</Badge></TableCell>

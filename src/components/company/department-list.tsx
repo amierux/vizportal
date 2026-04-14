@@ -169,7 +169,7 @@ export function DepartmentList({ departments, members }: DepartmentListProps) {
               </TableRow>
             )}
             {departments.map((dept) => (
-              <TableRow key={dept.id}>
+              <TableRow key={dept.id} className="row-hover">
                 <TableCell className="font-medium">{dept.name}</TableCell>
                 <TableCell>
                   {dept.manager_id

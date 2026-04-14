@@ -15,5 +15,9 @@ export default async function RolesPage() {
     .eq("company_id", profile!.company_id)
     .order("name");
 
-  return <RoleTable roles={roles ?? []} />;
+  return (
+    <div className="animate-fade-in-up">
+      <RoleTable roles={roles ?? []} />
+    </div>
+  );
 }
