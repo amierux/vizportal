@@ -48,6 +48,8 @@ function getPageTitle(pathname: string): string {
     "/workspace": "My Tasks",
     "/workspace/folders": "Workspace",
     "/settings/workspace": "Workspace Settings",
+    "/timesheet": "Timesheet",
+    "/settings/timesheet": "Timesheet Settings",
   };
   return map[pathname] ?? "VizPortal";
 }

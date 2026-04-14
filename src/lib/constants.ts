@@ -38,6 +38,8 @@ export const ROUTE_ROLE_MAP: Record<string, RoleName[]> = {
   "/workspace": [],
   "/workspace/folders": [],
   "/settings/workspace": ["admin"],
+  "/timesheet": [],
+  "/settings/timesheet": ["admin"],
 };
 
 export const EMPLOYMENT_STATUSES = [

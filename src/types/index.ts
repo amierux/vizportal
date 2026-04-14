@@ -47,6 +47,15 @@ export type WorkspaceChecklistTemplate = Database["public"]["Tables"]["workspace
 export type WorkspaceListTemplate = Database["public"]["Tables"]["workspace_list_templates"]["Row"];
 export type Notification = Database["public"]["Tables"]["notifications"]["Row"];
 export type NotificationPreference = Database["public"]["Tables"]["notification_preferences"]["Row"];
+export type WorkspaceStatusApprover = Database["public"]["Tables"]["workspace_status_approvers"]["Row"];
+export type WorkspaceStatusApproverList = Database["public"]["Tables"]["workspace_status_approver_list"]["Row"];
+export type WorkspaceTaskApproval = Database["public"]["Tables"]["workspace_task_approvals"]["Row"];
+export type WorkspaceTaskApprovalStep = Database["public"]["Tables"]["workspace_task_approval_steps"]["Row"];
+export type WorkspaceTimeEntry = Database["public"]["Tables"]["workspace_time_entries"]["Row"];
+export type TimesheetSettings = Database["public"]["Tables"]["timesheet_settings"]["Row"];
+export type TimesheetApprovalConfig = Database["public"]["Tables"]["timesheet_approval_configs"]["Row"];
+export type TimesheetApprovalStep = Database["public"]["Tables"]["timesheet_approval_steps"]["Row"];
+export type TimesheetSubmission = Database["public"]["Tables"]["timesheet_submissions"]["Row"];
 
 export type ApprovalType = "manual_clock" | "leave_request";
 export type AttendanceStatus = "present" | "late" | "absent" | "half_day" | "on_leave";

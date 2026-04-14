@@ -16,6 +16,7 @@ import {
   Timer,
   Wallet,
   LayoutGrid,
+  ClipboardList,
 } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
@@ -51,6 +52,7 @@ const NAV_ITEMS: NavItem[] = [
   { label: "Leave", href: "/leave", icon: CalendarDays, roles: [] },
   { label: "Overtime", href: "/overtime", icon: Timer, roles: [] },
   { label: "Payroll", href: "/payroll", icon: Wallet, roles: [] },
+  { label: "Timesheet", href: "/timesheet", icon: ClipboardList, roles: [] },
   { label: "Approvals", href: "/approvals", icon: CheckSquare, roles: [] },
   { label: "Settings", href: "/settings", icon: Settings, roles: ["admin"] },
 ];

@@ -1480,6 +1480,213 @@ export type Database = {
         };
         Relationships: [];
       };
+      workspace_status_approvers: {
+        Row: {
+          id: string;
+          status_id: string;
+          approval_mode: "hierarchical" | "any_one";
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          status_id: string;
+          approval_mode: "hierarchical" | "any_one";
+        };
+        Update: {
+          approval_mode?: "hierarchical" | "any_one";
+        };
+        Relationships: [];
+      };
+      workspace_status_approver_list: {
+        Row: {
+          id: string;
+          status_approver_id: string;
+          profile_id: string;
+          step_order: number;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          status_approver_id: string;
+          profile_id: string;
+          step_order: number;
+        };
+        Update: {
+          step_order?: number;
+        };
+        Relationships: [];
+      };
+      workspace_task_approvals: {
+        Row: {
+          id: string;
+          task_id: string;
+          from_status_id: string;
+          to_status_id: string;
+          requested_by: string;
+          status: "pending" | "approved" | "rejected";
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          task_id: string;
+          from_status_id: string;
+          to_status_id: string;
+          requested_by: string;
+          status?: "pending" | "approved" | "rejected";
+        };
+        Update: {
+          status?: "pending" | "approved" | "rejected";
+        };
+        Relationships: [];
+      };
+      workspace_task_approval_steps: {
+        Row: {
+          id: string;
+          task_approval_id: string;
+          approver_id: string;
+          step_order: number;
+          status: "pending" | "approved" | "rejected";
+          comment: string | null;
+          decided_at: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          task_approval_id: string;
+          approver_id: string;
+          step_order: number;
+          status?: "pending" | "approved" | "rejected";
+          comment?: string | null;
+          decided_at?: string | null;
+        };
+        Update: {
+          status?: "pending" | "approved" | "rejected";
+          comment?: string | null;
+          decided_at?: string | null;
+        };
+        Relationships: [];
+      };
+      workspace_time_entries: {
+        Row: {
+          id: string;
+          task_id: string;
+          profile_id: string;
+          company_id: string;
+          duration_minutes: number;
+          description: string | null;
+          date: string;
+          is_billable: boolean;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          task_id: string;
+          profile_id: string;
+          company_id: string;
+          duration_minutes: number;
+          description?: string | null;
+          date: string;
+          is_billable?: boolean;
+        };
+        Update: {
+          duration_minutes?: number;
+          description?: string | null;
+          date?: string;
+          is_billable?: boolean;
+        };
+        Relationships: [];
+      };
+      timesheet_settings: {
+        Row: {
+          id: string;
+          company_id: string;
+          reminder_email_addresses: string[];
+          submission_deadline_day: string;
+          is_approval_enabled: boolean;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          company_id: string;
+          reminder_email_addresses?: string[];
+          submission_deadline_day?: string;
+          is_approval_enabled?: boolean;
+        };
+        Update: {
+          reminder_email_addresses?: string[];
+          submission_deadline_day?: string;
+          is_approval_enabled?: boolean;
+        };
+        Relationships: [];
+      };
+      timesheet_approval_configs: {
+        Row: {
+          id: string;
+          company_id: string;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          company_id: string;
+        };
+        Update: Record<string, never>;
+        Relationships: [];
+      };
+      timesheet_approval_steps: {
+        Row: {
+          id: string;
+          timesheet_approval_config_id: string;
+          step_order: number;
+          role: string;
+          is_optional: boolean;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          timesheet_approval_config_id: string;
+          step_order: number;
+          role: string;
+          is_optional?: boolean;
+        };
+        Update: {
+          step_order?: number;
+          role?: string;
+          is_optional?: boolean;
+        };
+        Relationships: [];
+      };
+      timesheet_submissions: {
+        Row: {
+          id: string;
+          profile_id: string;
+          company_id: string;
+          week_start_date: string;
+          week_end_date: string;
+          total_minutes: number;
+          status: "draft" | "submitted" | "approved" | "rejected";
+          submitted_at: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          profile_id: string;
+          company_id: string;
+          week_start_date: string;
+          week_end_date: string;
+          total_minutes?: number;
+          status?: "draft" | "submitted" | "approved" | "rejected";
+          submitted_at?: string | null;
+        };
+        Update: {
+          total_minutes?: number;
+          status?: "draft" | "submitted" | "approved" | "rejected";
+          submitted_at?: string | null;
+        };
+        Relationships: [];
+      };
     };
     Views: Record<string, never>;
     Functions: {
