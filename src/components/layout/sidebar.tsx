@@ -48,7 +48,7 @@ const NAV_ITEMS: NavItem[] = [
     icon: Users,
     roles: [],
   },
-  { label: "Forms", href: "/forms/my-forms", icon: FileText, roles: [] },
+  { label: "Forms", href: "/forms", icon: FileText, roles: [] },
   { label: "Workspace", href: "/workspace", icon: LayoutGrid, roles: [] },
   { label: "Attendance", href: "/attendance", icon: Clock, roles: [] },
   { label: "Leave", href: "/leave", icon: CalendarDays, roles: [] },
