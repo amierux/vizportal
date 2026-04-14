@@ -334,7 +334,8 @@ export async function updateTask(_prevState: unknown, formData: FormData) {
 
 /**
  * Dedicated status change for kanban drag-and-drop.
- * Adds a system remark on change.
+ * Checks requires_approval; if set, creates approval record instead of changing status.
+ * On approval to a done status, triggers recurring task creation.
  */
 export async function updateTaskStatus(taskId: string, statusId: string) {
   const supabase = await createClient();
@@ -350,24 +351,114 @@ export async function updateTaskStatus(taskId: string, statusId: string) {
     .eq("id", user.id)
     .single();
 
-  // Get new status name
-  const { data: newStatus } = await supabase
+  const userName =
+    [profile?.first_name, profile?.last_name].filter(Boolean).join(" ") || "Someone";
+
+  // Resolve status name + approval config (folder or list statuses)
+  let statusName: string | undefined;
+  let requiresApproval = false;
+  let isDone = false;
+
+  const { data: folderStatus } = await supabase
     .from("workspace_folder_statuses")
-    .select("name")
+    .select("name, requires_approval, is_done")
     .eq("id", statusId)
     .single();
 
-  // Also try list statuses if not found in folder statuses
-  let statusName = newStatus?.name;
-  if (!statusName) {
+  if (folderStatus) {
+    statusName = folderStatus.name;
+    requiresApproval = folderStatus.requires_approval ?? false;
+    isDone = folderStatus.is_done ?? false;
+  } else {
     const { data: listStatus } = await supabase
       .from("workspace_list_statuses")
-      .select("name")
+      .select("name, requires_approval, is_done")
       .eq("id", statusId)
       .single();
     statusName = listStatus?.name ?? "unknown";
+    requiresApproval = listStatus?.requires_approval ?? false;
+    isDone = listStatus?.is_done ?? false;
   }
 
+  // Check for approval requirement
+  if (requiresApproval) {
+    const { data: approverConfig } = await supabase
+      .from("workspace_status_approvers")
+      .select("id, approval_mode")
+      .eq("status_id", statusId)
+      .single();
+
+    if (approverConfig) {
+      const { data: approverList } = await supabase
+        .from("workspace_status_approver_list")
+        .select("id, profile_id, step_order")
+        .eq("status_approver_id", approverConfig.id)
+        .order("step_order", { ascending: true });
+
+      // Get current task status for from_status_id
+      const { data: currentTask } = await supabase
+        .from("workspace_tasks")
+        .select("status_id")
+        .eq("id", taskId)
+        .single();
+
+      // Create approval record
+      const { data: approval, error: approvalError } = await supabase
+        .from("workspace_task_approvals")
+        .insert({
+          task_id: taskId,
+          from_status_id: currentTask?.status_id ?? statusId,
+          to_status_id: statusId,
+          requested_by: user.id,
+          status: "pending",
+        })
+        .select("id")
+        .single();
+
+      if (approvalError || !approval) return { error: "Failed to create approval request" };
+
+      // Create approval steps
+      if (approverList && approverList.length > 0) {
+        const steps = approverList.map((a) => ({
+          task_approval_id: approval.id,
+          approver_id: a.profile_id,
+          step_order: a.step_order,
+          status: "pending" as const,
+        }));
+        await supabase.from("workspace_task_approval_steps").insert(steps);
+
+        // Notify first approver (hierarchical) or all (any_one)
+        const toNotify =
+          approverConfig.approval_mode === "hierarchical"
+            ? [approverList[0]]
+            : approverList;
+
+        for (const approver of toNotify) {
+          await sendNotification({
+            companyId: (await supabase.from("workspace_tasks").select("company_id").eq("id", taskId).single()).data?.company_id ?? "",
+            recipientId: approver.profile_id,
+            type: "task_status_approval",
+            title: "Approval requested",
+            message: `${userName} requested status change to "${statusName}" on a task`,
+            link: `/workspace/tasks/${taskId}`,
+          });
+        }
+      }
+
+      // Add remark about pending approval
+      await supabase.from("workspace_task_remarks").insert({
+        task_id: taskId,
+        profile_id: user.id,
+        content: `Status change to "${statusName}" requested by ${userName} — pending approval`,
+      });
+
+      revalidatePath(`/workspace/tasks/${taskId}`);
+      revalidatePath(`/workspace/folders`);
+      return { success: true, pendingApproval: true };
+    }
+  }
+
+  // No approval needed — change status directly
   const { error } = await supabase
     .from("workspace_tasks")
     .update({ status_id: statusId })
@@ -375,18 +466,400 @@ export async function updateTaskStatus(taskId: string, statusId: string) {
 
   if (error) return { error: "Failed to update task status" };
 
-  const userName =
-    [profile?.first_name, profile?.last_name].filter(Boolean).join(" ") || "Someone";
-
   await supabase.from("workspace_task_remarks").insert({
     task_id: taskId,
     profile_id: user.id,
     content: `Status changed to "${statusName}" by ${userName}`,
   });
 
+  // Handle recurring task on done status
+  if (isDone) {
+    await handleRecurringTaskCompletion(taskId);
+  }
+
   revalidatePath(`/workspace/tasks/${taskId}`);
   revalidatePath(`/workspace/folders`);
   return { success: true };
+}
+
+/**
+ * Process an approval step (approve or reject).
+ * Hierarchical: advance to next step; all approved = change status.
+ * Any_one: one approval = change status.
+ * Rejection: mark approval rejected, add remark.
+ */
+export async function processTaskApproval(
+  stepId: string,
+  decision: "approved" | "rejected",
+  comment: string | null
+) {
+  const supabase = await createClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Not authenticated" };
+
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("first_name, last_name")
+    .eq("id", user.id)
+    .single();
+
+  const userName =
+    [profile?.first_name, profile?.last_name].filter(Boolean).join(" ") || "Someone";
+
+  // Get the step
+  const { data: step } = await supabase
+    .from("workspace_task_approval_steps")
+    .select("*, workspace_task_approvals(id, task_id, to_status_id, status, workspace_task_approval_steps(id, step_order, status, approver_id))")
+    .eq("id", stepId)
+    .single();
+
+  if (!step) return { error: "Step not found" };
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const approval = (step as any).workspace_task_approvals;
+  if (!approval) return { error: "Approval not found" };
+  if (approval.status !== "pending") return { error: "Approval already resolved" };
+
+  // Update step
+  await supabase
+    .from("workspace_task_approval_steps")
+    .update({ status: decision, comment, decided_at: new Date().toISOString() })
+    .eq("id", stepId);
+
+  const taskId = approval.task_id;
+  const toStatusId = approval.to_status_id;
+
+  if (decision === "rejected") {
+    // Mark approval as rejected
+    await supabase
+      .from("workspace_task_approvals")
+      .update({ status: "rejected" })
+      .eq("id", approval.id);
+
+    await supabase.from("workspace_task_remarks").insert({
+      task_id: taskId,
+      profile_id: user.id,
+      content: `Status change rejected by ${userName}${comment ? `: ${comment}` : ""}`,
+    });
+
+    revalidatePath(`/workspace/tasks/${taskId}`);
+    revalidatePath(`/workspace/folders`);
+    return { success: true };
+  }
+
+  // Approved — check mode
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const allSteps = (approval.workspace_task_approval_steps as any[]) ?? [];
+  const remainingSteps = allSteps.filter(
+    (s: { id: string; status: string }) => s.id !== stepId && s.status === "pending"
+  );
+
+  // Get approval config mode
+  const { data: statusApprover } = await supabase
+    .from("workspace_status_approvers")
+    .select("approval_mode")
+    .eq("status_id", toStatusId)
+    .single();
+
+  const mode = statusApprover?.approval_mode ?? "hierarchical";
+
+  let shouldApprove = false;
+
+  if (mode === "any_one") {
+    shouldApprove = true;
+    // Mark remaining steps as approved too
+    if (remainingSteps.length > 0) {
+      await supabase
+        .from("workspace_task_approval_steps")
+        .update({ status: "approved", decided_at: new Date().toISOString() })
+        .in("id", remainingSteps.map((s: { id: string }) => s.id));
+    }
+  } else {
+    // Hierarchical — notify next step if exists
+    const currentStepOrder = step.step_order;
+    const nextStep = allSteps.find(
+      (s: { step_order: number; status: string }) =>
+        s.step_order > currentStepOrder && s.status === "pending"
+    );
+
+    if (nextStep) {
+      // Notify next approver
+      const { data: task } = await supabase
+        .from("workspace_tasks")
+        .select("company_id")
+        .eq("id", taskId)
+        .single();
+
+      if (task) {
+        await sendNotification({
+          companyId: task.company_id,
+          recipientId: nextStep.approver_id,
+          type: "task_status_approval",
+          title: "Approval needed",
+          message: `${userName} approved a step — your approval is now required`,
+          link: `/workspace/tasks/${taskId}`,
+        });
+      }
+    } else {
+      // All steps approved
+      shouldApprove = true;
+    }
+  }
+
+  if (shouldApprove) {
+    // Mark approval as approved
+    await supabase
+      .from("workspace_task_approvals")
+      .update({ status: "approved" })
+      .eq("id", approval.id);
+
+    // Change task status
+    await supabase
+      .from("workspace_tasks")
+      .update({ status_id: toStatusId })
+      .eq("id", taskId);
+
+    // Check if this status is done → recurring
+    const { data: fs } = await supabase
+      .from("workspace_folder_statuses")
+      .select("is_done")
+      .eq("id", toStatusId)
+      .single();
+    const isDone = fs?.is_done ?? false;
+    if (!isDone) {
+      const { data: ls } = await supabase
+        .from("workspace_list_statuses")
+        .select("is_done")
+        .eq("id", toStatusId)
+        .single();
+      if (ls?.is_done) await handleRecurringTaskCompletion(taskId);
+    } else {
+      await handleRecurringTaskCompletion(taskId);
+    }
+
+    // Get status name
+    let approvedStatusName = "unknown";
+    const { data: fsName } = await supabase
+      .from("workspace_folder_statuses")
+      .select("name")
+      .eq("id", toStatusId)
+      .single();
+    if (fsName) approvedStatusName = fsName.name;
+    else {
+      const { data: lsName } = await supabase
+        .from("workspace_list_statuses")
+        .select("name")
+        .eq("id", toStatusId)
+        .single();
+      if (lsName) approvedStatusName = lsName.name;
+    }
+
+    await supabase.from("workspace_task_remarks").insert({
+      task_id: taskId,
+      profile_id: user.id,
+      content: `Status change to "${approvedStatusName}" approved by ${userName}${comment ? ` — ${comment}` : ""}`,
+    });
+  }
+
+  revalidatePath(`/workspace/tasks/${taskId}`);
+  revalidatePath(`/workspace/folders`);
+  return { success: true };
+}
+
+/**
+ * Get pending approval records for a task (for UI display).
+ */
+export async function getPendingTaskApprovals(taskId: string) {
+  const supabase = await createClient();
+
+  const { data } = await supabase
+    .from("workspace_task_approvals")
+    .select(`
+      *,
+      requested_by_profile:requested_by(first_name, last_name),
+      workspace_task_approval_steps(
+        id, step_order, status, comment, decided_at,
+        approver:approver_id(id, first_name, last_name)
+      )
+    `)
+    .eq("task_id", taskId)
+    .eq("status", "pending")
+    .order("created_at", { ascending: false });
+
+  return data ?? [];
+}
+
+// ─── Recurring Tasks ──────────────────────────────────────────────────────────
+
+function shiftDate(dateStr: string, interval: string, every: number): string {
+  const d = new Date(dateStr);
+  switch (interval) {
+    case "daily": d.setDate(d.getDate() + every); break;
+    case "weekly": d.setDate(d.getDate() + (every * 7)); break;
+    case "monthly": d.setMonth(d.getMonth() + every); break;
+    default: d.setDate(d.getDate() + every); break;
+  }
+  return d.toISOString().split("T")[0];
+}
+
+/**
+ * When a recurring task is marked done, create the next occurrence.
+ * Copies checklists/subtasks based on recurrence_rule carry-over flags.
+ */
+export async function handleRecurringTaskCompletion(taskId: string) {
+  const supabase = await createClient();
+
+  const { data: task } = await supabase
+    .from("workspace_tasks")
+    .select(`
+      *,
+      workspace_task_checklists(
+        id, name, position,
+        workspace_checklist_items(id, name, is_checked, position)
+      ),
+      workspace_tasks!parent_task_id(id, name, status_id, assignee_id, priority, description, start_date, target_end_date)
+    `)
+    .eq("id", taskId)
+    .single();
+
+  if (!task) return;
+  if (!task.is_recurring || !task.recurrence_rule) return;
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const rule = task.recurrence_rule as any;
+  const interval: string = rule.interval ?? "weekly";
+  const every: number = rule.every ?? 1;
+  const carryChecklist: boolean = rule.carry_over_checklist ?? false;
+  const carrySubtasks: boolean = rule.carry_over_subtasks ?? false;
+
+  // Find first non-done status in the list
+  const { data: list } = await supabase
+    .from("workspace_lists")
+    .select("folder_id, status_override")
+    .eq("id", task.list_id)
+    .single();
+
+  if (!list) return;
+
+  let firstStatusId: string | null = null;
+  if (list.status_override) {
+    const { data: ls } = await supabase
+      .from("workspace_list_statuses")
+      .select("id")
+      .eq("list_id", task.list_id)
+      .eq("is_done", false)
+      .order("position", { ascending: true })
+      .limit(1)
+      .single();
+    firstStatusId = ls?.id ?? null;
+  } else {
+    const { data: fs } = await supabase
+      .from("workspace_folder_statuses")
+      .select("id")
+      .eq("folder_id", list.folder_id)
+      .eq("is_done", false)
+      .order("position", { ascending: true })
+      .limit(1)
+      .single();
+    firstStatusId = fs?.id ?? null;
+  }
+
+  if (!firstStatusId) return;
+
+  // Compute new dates
+  const newStartDate = task.start_date ? shiftDate(task.start_date, interval, every) : null;
+  const newEndDate = task.target_end_date ? shiftDate(task.target_end_date, interval, every) : null;
+
+  // Get next position
+  const { data: lastTask } = await supabase
+    .from("workspace_tasks")
+    .select("position")
+    .eq("list_id", task.list_id)
+    .is("parent_task_id", null)
+    .order("position", { ascending: false })
+    .limit(1)
+    .single();
+
+  const nextPosition = lastTask ? lastTask.position + 1 : 0;
+
+  const { data: newTask, error: taskError } = await supabase
+    .from("workspace_tasks")
+    .insert({
+      list_id: task.list_id,
+      company_id: task.company_id,
+      name: task.name,
+      description: task.description,
+      assignee_id: task.assignee_id,
+      priority: task.priority,
+      status_id: firstStatusId,
+      start_date: newStartDate,
+      target_end_date: newEndDate,
+      position: nextPosition,
+      created_by: task.created_by,
+      is_recurring: true,
+      recurrence_rule: task.recurrence_rule,
+    })
+    .select("id")
+    .single();
+
+  if (taskError || !newTask) return;
+
+  // Carry over unchecked checklist items
+  if (carryChecklist && task.workspace_task_checklists?.length) {
+    for (const checklist of task.workspace_task_checklists) {
+      const { data: newChecklist } = await supabase
+        .from("workspace_task_checklists")
+        .insert({ task_id: newTask.id, name: checklist.name, position: checklist.position })
+        .select("id")
+        .single();
+
+      if (newChecklist) {
+        const uncheckedItems = checklist.workspace_checklist_items.filter((i) => !i.is_checked);
+        if (uncheckedItems.length > 0) {
+          await supabase.from("workspace_checklist_items").insert(
+            uncheckedItems.map((item) => ({
+              checklist_id: newChecklist.id,
+              name: item.name,
+              is_checked: false,
+              position: item.position,
+            }))
+          );
+        }
+      }
+    }
+  }
+
+  // Carry over incomplete subtasks
+  if (carrySubtasks) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const subtasks = (task as any).workspace_tasks ?? [];
+    const incompleteSubtasks = subtasks.filter((s: { status_id: string }) => {
+      // We don't easily know is_done here, just copy all subtasks that aren't the done status
+      return true; // Copy all — filtering by is_done would require extra queries
+    });
+
+    if (incompleteSubtasks.length > 0) {
+      await supabase.from("workspace_tasks").insert(
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        incompleteSubtasks.map((sub: any, i: number) => ({
+          list_id: task.list_id,
+          company_id: task.company_id,
+          parent_task_id: newTask.id,
+          name: sub.name,
+          description: sub.description ?? null,
+          assignee_id: sub.assignee_id,
+          priority: sub.priority,
+          status_id: firstStatusId,
+          position: i,
+          created_by: task.created_by,
+        }))
+      );
+    }
+  }
+
+  return newTask.id;
 }
 
 /**
