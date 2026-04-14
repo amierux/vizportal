@@ -95,6 +95,24 @@ export async function submitManualClock(
   const timestamp = new Date(`${parsed.data.date}T${parsed.data.time}:00+08:00`).toISOString();
   const workDate = parsed.data.date;
 
+  // Handle optional attachment upload
+  let attachmentUrl: string | null = null;
+  const attachmentFile = formData.get("attachment") as File | null;
+  if (attachmentFile && attachmentFile.size > 0) {
+    const ext = attachmentFile.name.split(".").pop();
+    const fileId = crypto.randomUUID();
+    const path = `${profile.company_id}/attendance/${user.id}/manual/${fileId}.${ext}`;
+    const { error: uploadError } = await supabase.storage
+      .from("vizportal-storage")
+      .upload(path, attachmentFile);
+    if (!uploadError) {
+      const { data: urlData } = supabase.storage
+        .from("vizportal-storage")
+        .getPublicUrl(path);
+      attachmentUrl = urlData.publicUrl;
+    }
+  }
+
   // Create clock entry with is_manual = true
   const { data: entry, error: insertError } = await supabase
     .from("clock_entries")
@@ -105,6 +123,7 @@ export async function submitManualClock(
       timestamp,
       is_manual: true,
       date: workDate,
+      attachment_url: attachmentUrl,
     })
     .select("id")
     .single();

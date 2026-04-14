@@ -82,6 +82,11 @@ export function ManualClockDialog() {
             />
           </div>
 
+          <div className="space-y-2">
+            <Label htmlFor="attachment">Attachment (optional)</Label>
+            <Input id="attachment" name="attachment" type="file" accept="image/*,.pdf,.doc,.docx" />
+          </div>
+
           <Button type="submit" className="w-full" disabled={isPending}>
             {isPending ? "Submitting..." : "Submit for Approval"}
           </Button>
