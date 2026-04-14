@@ -5,6 +5,7 @@ import { getTask } from "@/lib/actions/workspace-tasks";
 import { getList } from "@/lib/actions/workspace-lists";
 import { getFolder } from "@/lib/actions/workspace-folders";
 import { getChecklistTemplates } from "@/lib/actions/workspace-templates";
+import { getTaskTimeEntries } from "@/lib/actions/workspace-time-entries";
 import { TaskDetailPanel } from "@/components/workspace/task-detail-panel";
 import { buttonVariants } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
@@ -23,9 +24,10 @@ export default async function TaskDetailPage({ params }: PageProps) {
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
-  const [task, checklistTemplates] = await Promise.all([
+  const [task, checklistTemplates, timeEntries] = await Promise.all([
     getTask(taskId),
     getChecklistTemplates(),
+    getTaskTimeEntries(taskId),
   ]);
 
   if (!task) notFound();
@@ -85,6 +87,8 @@ export default async function TaskDetailPage({ params }: PageProps) {
         statuses={statuses}
         members={members}
         checklistTemplates={checklistTemplates.map((t) => ({ id: t.id, name: t.name }))}
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        timeEntries={timeEntries as any}
       />
     </div>
   );

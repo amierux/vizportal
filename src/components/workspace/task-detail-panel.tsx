@@ -18,6 +18,7 @@ import { TaskRemarks } from "./task-remarks";
 import { TaskChecklists } from "./task-checklists";
 import { TaskAttachments } from "./task-attachments";
 import { TaskSubtasks } from "./task-subtasks";
+import { TaskTimeLog } from "./task-time-log";
 import { Save } from "lucide-react";
 
 const PRIORITY_OPTIONS = [
@@ -50,6 +51,15 @@ type Member = {
 type ChecklistTemplate = {
   id: string;
   name: string;
+};
+
+type TimeEntry = {
+  id: string;
+  date: string;
+  duration_minutes: number;
+  description: string | null;
+  is_billable: boolean;
+  profiles: { first_name: string | null; last_name: string | null } | null;
 };
 
 type TaskDetailPanelProps = {
@@ -100,6 +110,7 @@ type TaskDetailPanelProps = {
   statuses: Status[];
   members: Member[];
   checklistTemplates?: ChecklistTemplate[];
+  timeEntries?: TimeEntry[];
 };
 
 export function TaskDetailPanel({
@@ -107,6 +118,7 @@ export function TaskDetailPanel({
   statuses,
   members,
   checklistTemplates = [],
+  timeEntries = [],
 }: TaskDetailPanelProps) {
   const [state, formAction, isPending] = useActionState(updateTask, null);
   const [statusPending, startStatusTransition] = useTransition();
@@ -260,6 +272,11 @@ export function TaskDetailPanel({
           attachments={task.workspace_task_attachments ?? []}
           taskId={task.id}
         />
+
+        <Separator />
+
+        {/* Time Log */}
+        <TaskTimeLog entries={timeEntries} taskId={task.id} />
       </div>
 
       {/* Footer: Remarks */}
