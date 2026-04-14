@@ -4,6 +4,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PersonalInfoTab } from "@/components/employees/personal-info-tab";
 import { EmploymentTab } from "@/components/employees/employment-tab";
 import { DocumentsTab } from "@/components/employees/documents-tab";
+import { EmployeeLeaveTab } from "@/components/leave/employee-leave-tab";
+import { getEmployeeLeaveBalances } from "@/lib/actions/leave";
 import { formatFullName } from "@/lib/utils/format";
 import type { RoleName } from "@/types";
 
@@ -78,6 +80,11 @@ export default async function EmployeeDetailPage({
       .order("rank"),
   ]);
 
+  // Fetch leave balances (admin/HR only)
+  const leaveBalances = isAdminOrHr
+    ? await getEmployeeLeaveBalances(id)
+    : [];
+
   return (
     <div className="mx-auto max-w-3xl">
       <h2 className="mb-6 text-xl font-semibold">
@@ -89,6 +96,7 @@ export default async function EmployeeDetailPage({
           <TabsTrigger value="personal">Personal Info</TabsTrigger>
           <TabsTrigger value="employment">Employment</TabsTrigger>
           <TabsTrigger value="documents">Documents</TabsTrigger>
+          {isAdminOrHr && <TabsTrigger value="leave">Leave</TabsTrigger>}
         </TabsList>
 
         <TabsContent value="personal">
@@ -149,6 +157,16 @@ export default async function EmployeeDetailPage({
             canDelete={isAdminOrHr}
           />
         </TabsContent>
+
+        {isAdminOrHr && (
+          <TabsContent value="leave">
+            {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+            <EmployeeLeaveTab
+              profileId={id}
+              balances={leaveBalances as any}
+            />
+          </TabsContent>
+        )}
       </Tabs>
     </div>
   );
