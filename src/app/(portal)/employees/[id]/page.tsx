@@ -5,7 +5,9 @@ import { PersonalInfoTab } from "@/components/employees/personal-info-tab";
 import { EmploymentTab } from "@/components/employees/employment-tab";
 import { DocumentsTab } from "@/components/employees/documents-tab";
 import { EmployeeLeaveTab } from "@/components/leave/employee-leave-tab";
+import { SalaryTab } from "@/components/employees/salary-tab";
 import { getEmployeeLeaveBalances } from "@/lib/actions/leave";
+import { getRecurringDeductions, getCustomDeductionTypes } from "@/lib/actions/payroll-settings";
 import { formatFullName } from "@/lib/utils/format";
 import type { RoleName } from "@/types";
 
@@ -35,6 +37,11 @@ export default async function EmployeeDetailPage({
   );
 
   const isAdminOrHr = roles.includes("admin") || roles.includes("hr");
+  const canViewSalary =
+    roles.includes("admin") ||
+    roles.includes("hr") ||
+    roles.includes("business_manager") ||
+    roles.includes("director");
   const isSelf = user.id === id;
 
   // Fetch employee data
@@ -85,6 +92,11 @@ export default async function EmployeeDetailPage({
     ? await getEmployeeLeaveBalances(id)
     : [];
 
+  // Fetch salary-related data (payroll-privileged roles only)
+  const [recurringDeductions, deductionTypes] = canViewSalary
+    ? await Promise.all([getRecurringDeductions(id), getCustomDeductionTypes()])
+    : [[], []];
+
   return (
     <div className="mx-auto max-w-3xl animate-fade-in-up">
       <h2 className="mb-6 text-xl font-semibold">
@@ -96,6 +108,7 @@ export default async function EmployeeDetailPage({
           <TabsTrigger value="personal">Personal Info</TabsTrigger>
           <TabsTrigger value="employment">Employment</TabsTrigger>
           <TabsTrigger value="documents">Documents</TabsTrigger>
+          {canViewSalary && <TabsTrigger value="salary">Salary</TabsTrigger>}
           {isAdminOrHr && <TabsTrigger value="leave">Leave</TabsTrigger>}
         </TabsList>
 
@@ -157,6 +170,24 @@ export default async function EmployeeDetailPage({
             canDelete={isAdminOrHr}
           />
         </TabsContent>
+
+        {canViewSalary && (
+          <TabsContent value="salary" className="animate-fade-in">
+            <SalaryTab
+              profileId={id}
+              salary={details.salary}
+              bankName={details.bank_name}
+              bankAccountNumber={details.bank_account_number}
+              sssNumber={details.sss_number}
+              philhealthNumber={details.philhealth_number}
+              pagibigNumber={details.pagibig_number}
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              recurringDeductions={recurringDeductions as any}
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              deductionTypes={deductionTypes as any}
+            />
+          </TabsContent>
+        )}
 
         {isAdminOrHr && (
           <TabsContent value="leave" className="animate-fade-in">
