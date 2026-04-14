@@ -17,6 +17,7 @@ import { Upload } from "lucide-react";
 import { toast } from "sonner";
 import type { Company, Profile } from "@/types";
 import { formatFullName } from "@/lib/utils/format";
+import { TIMEZONE_OPTIONS, COUNTRY_OPTIONS } from "@/lib/utils/timezone";
 
 type CompanyFormProps = {
   company: Company;
@@ -115,6 +116,39 @@ export function CompanyForm({ company, members }: CompanyFormProps) {
 
       <input type="hidden" name="logo_url" value={logoUrl ?? ""} />
       <input type="hidden" name="favicon_url" value={faviconUrl ?? ""} />
+
+      <div className="grid grid-cols-2 gap-4">
+        <div className="space-y-2">
+          <Label htmlFor="timezone">Timezone</Label>
+          <Select name="timezone" defaultValue={company.timezone ?? "Asia/Singapore"}>
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {TIMEZONE_OPTIONS.map((tz) => (
+                <SelectItem key={tz.value} value={tz.value}>
+                  {tz.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="holiday_country">Holiday Country</Label>
+          <Select name="holiday_country" defaultValue={company.holiday_country ?? "PH"}>
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {COUNTRY_OPTIONS.map((c) => (
+                <SelectItem key={c.value} value={c.value}>
+                  {c.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
 
       <div className="space-y-2">
         <Label htmlFor="name">Company Name</Label>

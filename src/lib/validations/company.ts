@@ -6,6 +6,8 @@ export const companySchema = z.object({
   favicon_url: z.string().url().optional().nullable(),
   business_manager_id: z.string().uuid().optional().nullable(),
   director_id: z.string().uuid().optional().nullable(),
+  timezone: z.string().optional(),
+  holiday_country: z.string().optional(),
 });
 
 export type CompanyInput = z.infer<typeof companySchema>;

@@ -38,6 +38,8 @@ export async function updateCompany(_prevState: unknown, formData: FormData) {
     favicon_url: formData.get("favicon_url") || null,
     business_manager_id: formData.get("business_manager_id") || null,
     director_id: formData.get("director_id") || null,
+    timezone: formData.get("timezone") || null,
+    holiday_country: formData.get("holiday_country") || null,
   });
 
   if (!parsed.success) {
