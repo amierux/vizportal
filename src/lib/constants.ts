@@ -35,6 +35,9 @@ export const ROUTE_ROLE_MAP: Record<string, RoleName[]> = {
   "/payroll": [],
   "/payroll/process": ["admin", "hr", "business_manager", "director"],
   "/settings/payroll": ["admin"],
+  "/workspace": [],
+  "/workspace/folders": [],
+  "/settings/workspace": ["admin"],
 };
 
 export const EMPLOYMENT_STATUSES = [

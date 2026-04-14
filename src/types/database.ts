@@ -1109,6 +1109,377 @@ export type Database = {
         };
         Relationships: [];
       };
+      workspace_folders: {
+        Row: {
+          id: string;
+          company_id: string;
+          name: string;
+          description: string | null;
+          color: string;
+          icon: string;
+          created_by: string;
+          is_archived: boolean;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          company_id: string;
+          name: string;
+          description?: string | null;
+          color?: string;
+          icon?: string;
+          created_by: string;
+          is_archived?: boolean;
+        };
+        Update: {
+          name?: string;
+          description?: string | null;
+          color?: string;
+          icon?: string;
+          is_archived?: boolean;
+        };
+        Relationships: [];
+      };
+      workspace_folder_members: {
+        Row: {
+          id: string;
+          folder_id: string;
+          profile_id: string;
+          permission: "viewer" | "creator" | "editor" | "admin";
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          folder_id: string;
+          profile_id: string;
+          permission: "viewer" | "creator" | "editor" | "admin";
+        };
+        Update: {
+          permission?: "viewer" | "creator" | "editor" | "admin";
+        };
+        Relationships: [];
+      };
+      workspace_folder_statuses: {
+        Row: {
+          id: string;
+          folder_id: string;
+          name: string;
+          color: string;
+          position: number;
+          is_done: boolean;
+          requires_approval: boolean;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          folder_id: string;
+          name: string;
+          color: string;
+          position: number;
+          is_done?: boolean;
+          requires_approval?: boolean;
+        };
+        Update: {
+          name?: string;
+          color?: string;
+          position?: number;
+          is_done?: boolean;
+          requires_approval?: boolean;
+        };
+        Relationships: [];
+      };
+      workspace_lists: {
+        Row: {
+          id: string;
+          folder_id: string;
+          company_id: string;
+          name: string;
+          description: string | null;
+          position: number;
+          status_override: boolean;
+          created_by: string;
+          is_archived: boolean;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          folder_id: string;
+          company_id: string;
+          name: string;
+          description?: string | null;
+          position?: number;
+          status_override?: boolean;
+          created_by: string;
+          is_archived?: boolean;
+        };
+        Update: {
+          name?: string;
+          description?: string | null;
+          position?: number;
+          status_override?: boolean;
+          is_archived?: boolean;
+        };
+        Relationships: [];
+      };
+      workspace_list_statuses: {
+        Row: {
+          id: string;
+          list_id: string;
+          name: string;
+          color: string;
+          position: number;
+          is_done: boolean;
+          requires_approval: boolean;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          list_id: string;
+          name: string;
+          color: string;
+          position: number;
+          is_done?: boolean;
+          requires_approval?: boolean;
+        };
+        Update: {
+          name?: string;
+          color?: string;
+          position?: number;
+          is_done?: boolean;
+          requires_approval?: boolean;
+        };
+        Relationships: [];
+      };
+      workspace_tasks: {
+        Row: {
+          id: string;
+          list_id: string;
+          company_id: string;
+          parent_task_id: string | null;
+          name: string;
+          description: string | null;
+          status_id: string;
+          assignee_id: string | null;
+          created_by: string;
+          start_date: string | null;
+          target_end_date: string | null;
+          completed_at: string | null;
+          priority: "urgent" | "high" | "medium" | "low" | "none";
+          position: number;
+          is_recurring: boolean;
+          recurrence_rule: unknown | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          list_id: string;
+          company_id: string;
+          parent_task_id?: string | null;
+          name: string;
+          description?: string | null;
+          status_id: string;
+          assignee_id?: string | null;
+          created_by: string;
+          start_date?: string | null;
+          target_end_date?: string | null;
+          completed_at?: string | null;
+          priority?: "urgent" | "high" | "medium" | "low" | "none";
+          position?: number;
+          is_recurring?: boolean;
+          recurrence_rule?: unknown | null;
+        };
+        Update: {
+          name?: string;
+          description?: string | null;
+          status_id?: string;
+          assignee_id?: string | null;
+          start_date?: string | null;
+          target_end_date?: string | null;
+          completed_at?: string | null;
+          priority?: "urgent" | "high" | "medium" | "low" | "none";
+          position?: number;
+          is_recurring?: boolean;
+          recurrence_rule?: unknown | null;
+        };
+        Relationships: [];
+      };
+      workspace_task_remarks: {
+        Row: {
+          id: string;
+          task_id: string;
+          profile_id: string;
+          content: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          task_id: string;
+          profile_id: string;
+          content: string;
+        };
+        Update: Record<string, never>;
+        Relationships: [];
+      };
+      workspace_task_attachments: {
+        Row: {
+          id: string;
+          task_id: string;
+          file_url: string;
+          file_name: string;
+          uploaded_by: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          task_id: string;
+          file_url: string;
+          file_name: string;
+          uploaded_by: string;
+        };
+        Update: Record<string, never>;
+        Relationships: [];
+      };
+      workspace_task_checklists: {
+        Row: {
+          id: string;
+          task_id: string;
+          name: string;
+          position: number;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          task_id: string;
+          name: string;
+          position?: number;
+        };
+        Update: {
+          name?: string;
+          position?: number;
+        };
+        Relationships: [];
+      };
+      workspace_checklist_items: {
+        Row: {
+          id: string;
+          checklist_id: string;
+          name: string;
+          is_checked: boolean;
+          position: number;
+          assignee_id: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          checklist_id: string;
+          name: string;
+          is_checked?: boolean;
+          position?: number;
+          assignee_id?: string | null;
+        };
+        Update: {
+          name?: string;
+          is_checked?: boolean;
+          position?: number;
+          assignee_id?: string | null;
+        };
+        Relationships: [];
+      };
+      workspace_checklist_templates: {
+        Row: {
+          id: string;
+          company_id: string;
+          name: string;
+          items: unknown;
+          created_by: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          company_id: string;
+          name: string;
+          items: unknown;
+          created_by: string;
+        };
+        Update: {
+          name?: string;
+          items?: unknown;
+        };
+        Relationships: [];
+      };
+      workspace_list_templates: {
+        Row: {
+          id: string;
+          company_id: string;
+          name: string;
+          template_data: unknown;
+          created_by: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          company_id: string;
+          name: string;
+          template_data: unknown;
+          created_by: string;
+        };
+        Update: {
+          name?: string;
+          template_data?: unknown;
+        };
+        Relationships: [];
+      };
+      notifications: {
+        Row: {
+          id: string;
+          company_id: string;
+          profile_id: string;
+          type: string;
+          title: string;
+          message: string;
+          link: string | null;
+          is_read: boolean;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          company_id: string;
+          profile_id: string;
+          type: string;
+          title: string;
+          message: string;
+          link?: string | null;
+          is_read?: boolean;
+        };
+        Update: {
+          is_read?: boolean;
+        };
+        Relationships: [];
+      };
+      notification_preferences: {
+        Row: {
+          id: string;
+          profile_id: string;
+          event_type: string;
+          in_app: boolean;
+          email: boolean;
+        };
+        Insert: {
+          id?: string;
+          profile_id: string;
+          event_type: string;
+          in_app?: boolean;
+          email?: boolean;
+        };
+        Update: {
+          in_app?: boolean;
+          email?: boolean;
+        };
+        Relationships: [];
+      };
     };
     Views: Record<string, never>;
     Functions: {

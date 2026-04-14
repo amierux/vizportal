@@ -15,6 +15,7 @@ import {
   CheckSquare,
   Timer,
   Wallet,
+  LayoutGrid,
 } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
@@ -45,6 +46,7 @@ const NAV_ITEMS: NavItem[] = [
     icon: Users,
     roles: [],
   },
+  { label: "Workspace", href: "/workspace", icon: LayoutGrid, roles: [] },
   { label: "Attendance", href: "/attendance", icon: Clock, roles: [] },
   { label: "Leave", href: "/leave", icon: CalendarDays, roles: [] },
   { label: "Overtime", href: "/overtime", icon: Timer, roles: [] },

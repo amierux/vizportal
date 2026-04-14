@@ -44,6 +44,9 @@ function getPageTitle(pathname: string): string {
     "/payroll": "Payroll",
     "/payroll/process": "Process Payroll",
     "/settings/payroll": "Payroll Settings",
+    "/workspace": "My Tasks",
+    "/workspace/folders": "Workspace",
+    "/settings/workspace": "Workspace Settings",
   };
   return map[pathname] ?? "VizPortal";
 }
