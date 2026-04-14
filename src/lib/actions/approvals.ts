@@ -7,27 +7,44 @@ import { formatFullName } from "@/lib/utils/format";
 import { getSystemSetting } from "@/lib/utils/settings";
 
 /**
- * Create an approval request with TL → DM chain.
- * Determines approvers from requester's department.
+ * Create an approval request with configurable approval chains.
+ * Reads approval_configs and approval_config_steps to determine approvers.
+ * Auto-approves if the config is disabled.
+ * Supports types: manual_clock, leave_request, overtime.
  */
 export async function createApprovalRequest(params: {
   companyId: string;
-  type: "manual_clock" | "leave_request";
+  type: "manual_clock" | "leave_request" | "overtime";
   referenceId: string;
   requesterId: string;
   details: string;
+  relievers?: string[];
 }) {
   const supabase = await createClient();
 
-  // Get requester's department info
+  // 1. Read approval_configs for the given type + company
+  const { data: config } = await supabase
+    .from("approval_configs")
+    .select("id, is_enabled")
+    .eq("company_id", params.companyId)
+    .eq("type", params.type)
+    .single();
+
+  // 2. Auto-approve if config is disabled
+  if (config && config.is_enabled === false) {
+    await applyApprovalSideEffects(supabase, params.type, params.referenceId);
+    return { success: true };
+  }
+
+  // 3. Get requester's department info
   const { data: empDetail } = await supabase
     .from("employee_details")
     .select("department_id")
     .eq("profile_id", params.requesterId)
     .single();
 
-  let teamLeaderId: string | null = null;
-  let managerId: string | null = null;
+  let deptTeamLeaderId: string | null = null;
+  let deptManagerId: string | null = null;
 
   if (empDetail?.department_id) {
     const { data: dept } = await supabase
@@ -36,17 +53,81 @@ export async function createApprovalRequest(params: {
       .eq("id", empDetail.department_id)
       .single();
 
-    teamLeaderId = dept?.team_leader_id ?? null;
-    managerId = dept?.manager_id ?? null;
+    deptTeamLeaderId = dept?.team_leader_id ?? null;
+    deptManagerId = dept?.manager_id ?? null;
   }
 
-  // Build approver list (skip nulls, skip if approver is the requester)
-  const approvers: string[] = [];
-  if (teamLeaderId && teamLeaderId !== params.requesterId) approvers.push(teamLeaderId);
-  if (managerId && managerId !== params.requesterId) approvers.push(managerId);
+  // 4. Get company-level approvers
+  const { data: company } = await supabase
+    .from("companies")
+    .select("business_manager_id, director_id")
+    .eq("id", params.companyId)
+    .single();
 
-  // Fallback: if no approvers found, route to any HR user
-  if (approvers.length === 0) {
+  const businessManagerId = company?.business_manager_id ?? null;
+  const directorId = company?.director_id ?? null;
+
+  // 5. Read config steps if config exists
+  interface ConfigStep {
+    step_order: number;
+    role: string;
+    is_optional: boolean;
+  }
+
+  let configSteps: ConfigStep[] = [];
+  if (config?.id) {
+    const { data: steps } = await supabase
+      .from("approval_config_steps")
+      .select("step_order, role, is_optional")
+      .eq("approval_config_id", config.id)
+      .order("step_order", { ascending: true });
+
+    configSteps = (steps ?? []) as ConfigStep[];
+  }
+
+  // If no config steps, fall back to legacy TL → DM chain
+  if (configSteps.length === 0) {
+    configSteps = [
+      { step_order: 1, role: "team_leader", is_optional: false },
+      { step_order: 2, role: "dept_manager", is_optional: true },
+    ];
+  }
+
+  // 6. Resolve each config step to actual user ID(s)
+  interface ResolvedStep {
+    step_order: number;
+    approver_ids: string[];
+  }
+
+  const resolvedSteps: ResolvedStep[] = [];
+
+  for (const configStep of configSteps) {
+    let approverIds: string[] = [];
+
+    if (configStep.role === "team_leader") {
+      if (deptTeamLeaderId) approverIds = [deptTeamLeaderId];
+    } else if (configStep.role === "dept_manager") {
+      if (deptManagerId) approverIds = [deptManagerId];
+    } else if (configStep.role === "business_manager") {
+      if (businessManagerId) approverIds = [businessManagerId];
+    } else if (configStep.role === "director") {
+      if (directorId) approverIds = [directorId];
+    } else if (configStep.role === "reliever") {
+      approverIds = (params.relievers ?? []).filter(Boolean);
+    }
+
+    // Filter out nulls and the requester themselves
+    approverIds = approverIds.filter((id) => id && id !== params.requesterId);
+
+    // Skip step if: no user resolved AND is_optional, OR no user resolved at all for required steps
+    if (approverIds.length === 0 && configStep.is_optional) continue;
+    if (approverIds.length === 0) continue;
+
+    resolvedSteps.push({ step_order: configStep.step_order, approver_ids: approverIds });
+  }
+
+  // 7. HR fallback: if zero approvers after resolution
+  if (resolvedSteps.length === 0) {
     const { data: hrUsers } = await supabase
       .from("user_roles")
       .select("profile_id, roles(name)")
@@ -59,15 +140,17 @@ export async function createApprovalRequest(params: {
     /* eslint-enable @typescript-eslint/no-explicit-any */
 
     if (hrProfileIds.length > 0) {
-      approvers.push(hrProfileIds[0]);
+      resolvedSteps.push({ step_order: 1, approver_ids: [hrProfileIds[0]] });
     }
   }
 
-  if (approvers.length === 0) {
+  if (resolvedSteps.length === 0) {
     return { error: "No approvers found. Please contact your administrator." };
   }
 
-  const totalSteps = approvers.length;
+  // total_steps = number of distinct step_order values
+  const distinctStepOrders = [...new Set(resolvedSteps.map((s) => s.step_order))];
+  const totalSteps = distinctStepOrders.length;
 
   // Create approval request
   const { data: request, error: reqError } = await supabase
@@ -84,13 +167,15 @@ export async function createApprovalRequest(params: {
 
   if (reqError || !request) return { error: "Failed to create approval request" };
 
-  // Create approval steps
-  for (let i = 0; i < approvers.length; i++) {
-    await supabase.from("approval_steps").insert({
-      approval_request_id: request.id,
-      step_order: i + 1,
-      approver_id: approvers[i],
-    });
+  // Create approval steps (one row per approver, preserving step_order for siblings)
+  for (const resolvedStep of resolvedSteps) {
+    for (const approverId of resolvedStep.approver_ids) {
+      await supabase.from("approval_steps").insert({
+        approval_request_id: request.id,
+        step_order: resolvedStep.step_order,
+        approver_id: approverId,
+      });
+    }
   }
 
   // Get requester name for email
@@ -104,15 +189,15 @@ export async function createApprovalRequest(params: {
     ? formatFullName(requester.first_name, requester.last_name)
     : "Unknown";
 
-  // Send email to first approver
-  const { data: firstStep } = await supabase
+  // Send email to first approver(s) at step_order = min
+  const firstStepOrder = distinctStepOrders[0];
+  const { data: firstSteps } = await supabase
     .from("approval_steps")
     .select("id, token, approver_id")
     .eq("approval_request_id", request.id)
-    .eq("step_order", 1)
-    .single();
+    .eq("step_order", firstStepOrder);
 
-  if (firstStep) {
+  for (const firstStep of firstSteps ?? []) {
     const { data: approver } = await supabase
       .from("profiles")
       .select("email")
@@ -143,6 +228,7 @@ export async function createApprovalRequest(params: {
 
 /**
  * Process an approval decision (approve or reject) for a given step.
+ * Handles multi-approver reliever steps: only advances when all siblings at same step_order are approved.
  */
 export async function processApprovalDecision(
   token: string,
@@ -217,11 +303,46 @@ export async function processApprovalDecision(
       await sendEmail({ to: requester.email, ...email });
     }
   } else if (decision === "approved") {
-    if (step.step_order < request.total_steps) {
+    // Check if there are other pending sibling steps at the same step_order
+    const { data: siblingSteps } = await supabase
+      .from("approval_steps")
+      .select("id, status")
+      .eq("approval_request_id", request.id)
+      .eq("step_order", step.step_order)
+      .neq("id", step.id);
+
+    const hasPendingSiblings = (siblingSteps ?? []).some(
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (s: any) => s.status === "pending"
+    );
+
+    if (hasPendingSiblings) {
+      // Other relievers at this step still pending — don't advance yet
+      revalidatePath("/approvals");
+      return { success: true };
+    }
+
+    // Determine next step order
+    const { data: allSteps } = await supabase
+      .from("approval_steps")
+      .select("step_order")
+      .eq("approval_request_id", request.id)
+      .order("step_order", { ascending: true });
+
+    const distinctOrders = [
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      ...new Set((allSteps ?? []).map((s: any) => s.step_order as number)),
+    ].sort((a, b) => a - b);
+
+    const currentIndex = distinctOrders.indexOf(step.step_order);
+    const nextStepOrder =
+      currentIndex < distinctOrders.length - 1 ? distinctOrders[currentIndex + 1] : null;
+
+    if (nextStepOrder !== null) {
       // Advance to next step
       await supabase
         .from("approval_requests")
-        .update({ current_step: step.step_order + 1 })
+        .update({ current_step: nextStepOrder })
         .eq("id", request.id);
 
       // Notify requester of partial approval
@@ -236,15 +357,14 @@ export async function processApprovalDecision(
         await sendEmail({ to: requester.email, ...email });
       }
 
-      // Send email to next approver
-      const { data: nextStep } = await supabase
+      // Send email to next approver(s)
+      const { data: nextSteps } = await supabase
         .from("approval_steps")
         .select("id, token, approver_id")
         .eq("approval_request_id", request.id)
-        .eq("step_order", step.step_order + 1)
-        .single();
+        .eq("step_order", nextStepOrder);
 
-      if (nextStep) {
+      for (const nextStep of nextSteps ?? []) {
         const { data: nextApprover } = await supabase
           .from("profiles")
           .select("email")
@@ -345,6 +465,11 @@ async function applyApprovalSideEffects(supabase: any, type: string, referenceId
           .eq("id", balance.id);
       }
     }
+  } else if (type === "overtime") {
+    await supabase
+      .from("overtime_requests")
+      .update({ status: "approved" })
+      .eq("id", referenceId);
   }
 }
 
@@ -363,6 +488,11 @@ async function applyRejectionSideEffects(supabase: any, type: string, referenceI
     // Update leave request status
     await supabase
       .from("leave_requests")
+      .update({ status: "rejected" })
+      .eq("id", referenceId);
+  } else if (type === "overtime") {
+    await supabase
+      .from("overtime_requests")
       .update({ status: "rejected" })
       .eq("id", referenceId);
   }
@@ -408,6 +538,11 @@ export async function cancelApprovalRequest(approvalRequestId: string) {
   } else if (request.type === "leave_request") {
     await supabase
       .from("leave_requests")
+      .update({ status: "cancelled" })
+      .eq("id", request.reference_id);
+  } else if (request.type === "overtime") {
+    await supabase
+      .from("overtime_requests")
       .update({ status: "cancelled" })
       .eq("id", request.reference_id);
   }
@@ -484,6 +619,13 @@ export async function getApprovalByToken(token: string) {
     const { data } = await supabase
       .from("leave_requests")
       .select("*, leave_types(name, code)")
+      .eq("id", request.reference_id)
+      .single();
+    referenceDetails = data;
+  } else if (request?.type === "overtime") {
+    const { data } = await supabase
+      .from("overtime_requests")
+      .select("*")
       .eq("id", request.reference_id)
       .single();
     referenceDetails = data;
