@@ -20,7 +20,7 @@ function getPageTitle(pathname: string): string {
     "/dashboard": "Dashboard",
     "/company": "Company Info",
     "/settings/company": "Company Settings",
-    "/employees": "Employees",
+    "/employees": "Employee Information",
     "/profile": "My Profile",
     "/settings": "Settings",
     "/settings/job-levels": "Job Levels",

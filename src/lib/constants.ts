@@ -13,7 +13,7 @@ export const ROLE_NAMES: Record<RoleName, string> = {
 export const ROUTE_ROLE_MAP: Record<string, RoleName[]> = {
   "/company": ["admin", "hr"],
   "/settings/company": ["admin", "hr"],
-  "/employees": ["admin", "hr", "director", "business_manager", "dept_manager", "team_leader"],
+  "/employees": [], // All authenticated users
   "/settings": ["admin"],
   "/settings/invitations": ["admin", "hr"],
   "/dashboard": [], // All authenticated users

@@ -23,10 +23,10 @@ type TabItem = {
 const TAB_ITEMS: TabItem[] = [
   { label: "Home", href: "/dashboard", icon: LayoutDashboard, roles: [] },
   {
-    label: "Employees",
+    label: "Employee Info",
     href: "/employees",
     icon: Users,
-    roles: ["admin", "hr", "director", "business_manager", "dept_manager", "team_leader"],
+    roles: [],
   },
   { label: "Attendance", href: "/attendance", icon: Clock, roles: [] },
   { label: "Leave", href: "/leave", icon: CalendarDays, roles: [] },

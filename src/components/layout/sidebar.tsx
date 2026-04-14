@@ -39,16 +39,15 @@ type NavItem = {
 const NAV_ITEMS: NavItem[] = [
   { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard, roles: [] },
   {
-    label: "Employees",
+    label: "Employee Info",
     href: "/employees",
     icon: Users,
-    roles: ["admin", "hr", "director", "business_manager", "dept_manager", "team_leader"],
+    roles: [],
   },
   { label: "Attendance", href: "/attendance", icon: Clock, roles: [] },
   { label: "Leave", href: "/leave", icon: CalendarDays, roles: [] },
   { label: "Overtime", href: "/overtime", icon: Timer, roles: [] },
   { label: "Approvals", href: "/approvals", icon: CheckSquare, roles: [] },
-  { label: "My Profile", href: "/profile", icon: UserCircle, roles: [] },
   { label: "Settings", href: "/settings", icon: Settings, roles: ["admin"] },
 ];
 
