@@ -11,6 +11,14 @@
     {
       "path": "/api/cron/leave-reset",
       "schedule": "0 16 * * *"
+    },
+    {
+      "path": "/api/cron/timesheet-reminder",
+      "schedule": "0 1 * * 1"
+    },
+    {
+      "path": "/api/cron/task-due-reminder",
+      "schedule": "0 1 * * *"
     }
   ]
 }
