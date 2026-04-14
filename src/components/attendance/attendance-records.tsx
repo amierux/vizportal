@@ -125,24 +125,24 @@ export function AttendanceRecords({ userRoles, departments }: AttendanceRecordsP
     <div className="space-y-4">
       <h2 className="text-lg font-semibold">Attendance Records</h2>
       <Tabs defaultValue="personal" onValueChange={handleTabChange}>
-        <TabsList>
-          <TabsTrigger value="personal">My Records</TabsTrigger>
-          {isTeamLeader && <TabsTrigger value="team">Team Records</TabsTrigger>}
-          {isDeptManager && <TabsTrigger value="department">Department Records</TabsTrigger>}
-          {isAdminLevel && <TabsTrigger value="all">All Members</TabsTrigger>}
-        </TabsList>
+        <RecordsFilterBar
+          departments={departments}
+          onFilter={handleFilter}
+          onExportCsv={exportCsv}
+          onExportPdf={exportPdf}
+          showDepartmentFilter={activeScope !== "personal"}
+          showNameSearch={activeScope !== "personal"}
+        >
+          <TabsList>
+            <TabsTrigger value="personal">My Records</TabsTrigger>
+            {isTeamLeader && <TabsTrigger value="team">Team Records</TabsTrigger>}
+            {isDeptManager && <TabsTrigger value="department">Department Records</TabsTrigger>}
+            {isAdminLevel && <TabsTrigger value="all">All Members</TabsTrigger>}
+          </TabsList>
+        </RecordsFilterBar>
 
         {["personal", "team", "department", "all"].map((scope) => (
           <TabsContent key={scope} value={scope}>
-            <RecordsFilterBar
-              departments={departments}
-              onFilter={handleFilter}
-              onExportCsv={exportCsv}
-              onExportPdf={exportPdf}
-              showDepartmentFilter={scope !== "personal"}
-              showNameSearch={scope !== "personal"}
-            />
-
             {loading ? (
               <p className="py-8 text-center text-muted-foreground">Loading...</p>
             ) : records.length === 0 ? (

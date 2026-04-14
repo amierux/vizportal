@@ -33,6 +33,7 @@ type RecordsFilterBarProps = {
   onExportPdf: () => void;
   showDepartmentFilter?: boolean;
   showNameSearch?: boolean;
+  children?: React.ReactNode;
 };
 
 export function RecordsFilterBar({
@@ -42,6 +43,7 @@ export function RecordsFilterBar({
   onExportPdf,
   showDepartmentFilter = true,
   showNameSearch = true,
+  children,
 }: RecordsFilterBarProps) {
   // Default to current month
   const now = new Date();
@@ -61,6 +63,7 @@ export function RecordsFilterBar({
 
   return (
     <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:flex-wrap">
+      {children}
       <div className="space-y-1">
         <Label className="text-xs">Start Date</Label>
         <Input
