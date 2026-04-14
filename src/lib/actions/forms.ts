@@ -101,6 +101,15 @@ export async function getForm(formId: string) {
       form_sections(
         *,
         form_fields(*)
+      ),
+      form_approval_configs(
+        id,
+        approval_mode,
+        form_approvers(
+          profile_id,
+          step_order,
+          profiles(first_name, last_name, email)
+        )
       )
     `
     )
@@ -285,7 +294,12 @@ export async function getFormAssignments(formId: string) {
  * Fetch a form by its public_token — no auth check, used for public form page.
  */
 export async function getFormByPublicToken(token: string) {
-  const supabase = await createClient();
+  // Use admin client to bypass RLS — token itself is the access credential
+  const { createClient: createAdminClient } = await import("@supabase/supabase-js");
+  const supabase = createAdminClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  );
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data } = await (supabase as any)

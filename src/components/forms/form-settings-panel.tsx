@@ -20,10 +20,10 @@ import {
 import { toast } from "sonner";
 import { Plus, X, Copy, Globe, GripVertical } from "lucide-react";
 
-type ApprovalStep = {
-  step_order: number;
-  role: string;
-  is_optional: boolean;
+type ApproverEntry = {
+  profile_id: string;
+  name: string;
+  email: string;
 };
 
 type FormSettingsPanelProps = {
@@ -37,38 +37,54 @@ type FormSettingsPanelProps = {
   profiles: any[];
 };
 
-const AVAILABLE_ROLES = [
-  { value: "admin", label: "Admin" },
-  { value: "hr", label: "HR" },
-  { value: "manager", label: "Manager" },
-  { value: "employee", label: "Employee" },
-];
+/** Derive initial approvers from the form's nested approval config (v2 shape). */
+function deriveInitialApprovers(form: Record<string, unknown>): ApproverEntry[] {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const config = (form.form_approval_configs as any) ?? null;
+  if (!config) return [];
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const approvers: any[] = Array.isArray(config.form_approvers)
+    ? config.form_approvers
+    : [];
+  return approvers
+    .sort((a, b) => a.step_order - b.step_order)
+    .map((a) => ({
+      profile_id: a.profile_id,
+      name: a.profiles
+        ? [a.profiles.first_name, a.profiles.last_name].filter(Boolean).join(" ") ||
+          a.profiles.email
+        : a.profile_id,
+      email: a.profiles?.email ?? "",
+    }));
+}
 
 export function FormSettingsPanel({ form, workspaceLists, departments, profiles }: FormSettingsPanelProps) {
   const [state, formAction, isPending] = useActionState(updateFormSettings, null);
 
   // Approval
-  const [approvalEnabled, setApprovalEnabled] = useState(form.approval_enabled ?? false);
-  const [approvalSteps, setApprovalSteps] = useState<ApprovalStep[]>(
-    form.form_approval_configs?.form_approval_steps ?? []
+  const [approvalEnabled, setApprovalEnabled] = useState<boolean>(form.approval_enabled ?? false);
+  const [approvalMode, setApprovalMode] = useState<"hierarchical" | "any_one">(
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (form.form_approval_configs as any)?.approval_mode ?? "hierarchical"
   );
-  const [newRole, setNewRole] = useState("");
+  const [approvers, setApprovers] = useState<ApproverEntry[]>(deriveInitialApprovers(form));
+  const [approverSearch, setApproverSearch] = useState("");
 
   // Save to list
-  const [saveToListEnabled, setSaveToListEnabled] = useState(form.save_to_list_enabled ?? false);
-  const [targetListId, setTargetListId] = useState(form.target_list_id ?? "");
+  const [saveToListEnabled, setSaveToListEnabled] = useState<boolean>(form.save_to_list_enabled ?? false);
+  const [targetListId, setTargetListId] = useState<string>(form.target_list_id ?? "");
 
   // Public link
-  const [isPublic, setIsPublic] = useState(form.is_public ?? false);
+  const [isPublic, setIsPublic] = useState<boolean>(form.is_public ?? false);
   const publicUrl =
     typeof window !== "undefined"
       ? `${window.location.origin}/forms/public/${form.public_token}`
       : `/forms/public/${form.public_token}`;
 
   // Schedule
-  const [scheduleEnabled, setScheduleEnabled] = useState(form.schedule_enabled ?? false);
-  const [scheduleCron, setScheduleCron] = useState(form.schedule_cron ?? "");
-  const [scheduleTarget, setScheduleTarget] = useState(form.schedule_target ?? "all_employees");
+  const [scheduleEnabled, setScheduleEnabled] = useState<boolean>(form.schedule_enabled ?? false);
+  const [scheduleCron, setScheduleCron] = useState<string>(form.schedule_cron ?? "");
+  const [scheduleTarget, setScheduleTarget] = useState<string>(form.schedule_target ?? "all_employees");
   const [scheduleTargetIds, setScheduleTargetIds] = useState<string[]>(
     form.schedule_target_ids ?? []
   );
@@ -78,22 +94,27 @@ export function FormSettingsPanel({ form, workspaceLists, departments, profiles 
     if (state && "error" in state) toast.error((state as { error: string }).error);
   }, [state]);
 
-  function addApprovalStep() {
-    if (!newRole) return;
-    const step: ApprovalStep = {
-      step_order: approvalSteps.length + 1,
-      role: newRole,
-      is_optional: false,
-    };
-    setApprovalSteps([...approvalSteps, step]);
-    setNewRole("");
+  // Filtered profile list (exclude already-added approvers)
+  const addedIds = new Set(approvers.map((a) => a.profile_id));
+  const filteredProfiles = profiles.filter((p) => {
+    if (addedIds.has(p.id)) return false;
+    if (!approverSearch) return true;
+    const fullName = [p.first_name, p.last_name].filter(Boolean).join(" ").toLowerCase();
+    return (
+      fullName.includes(approverSearch.toLowerCase()) ||
+      (p.email ?? "").toLowerCase().includes(approverSearch.toLowerCase())
+    );
+  });
+
+  function addApprover(profile: { id: string; first_name: string | null; last_name: string | null; email: string }) {
+    const name =
+      [profile.first_name, profile.last_name].filter(Boolean).join(" ") || profile.email;
+    setApprovers((prev) => [...prev, { profile_id: profile.id, name, email: profile.email }]);
+    setApproverSearch("");
   }
 
-  function removeApprovalStep(index: number) {
-    const updated = approvalSteps
-      .filter((_, i) => i !== index)
-      .map((s, i) => ({ ...s, step_order: i + 1 }));
-    setApprovalSteps(updated);
+  function removeApprover(profileId: string) {
+    setApprovers((prev) => prev.filter((a) => a.profile_id !== profileId));
   }
 
   function toggleScheduleTargetId(id: string) {
@@ -107,7 +128,12 @@ export function FormSettingsPanel({ form, workspaceLists, departments, profiles 
       <form action={formAction} className="space-y-6">
         <input type="hidden" name="form_id" value={form.id} />
         <input type="hidden" name="approval_enabled" value={String(approvalEnabled)} />
-        <input type="hidden" name="approval_steps" value={JSON.stringify(approvalSteps)} />
+        <input type="hidden" name="approval_mode" value={approvalMode} />
+        <input
+          type="hidden"
+          name="approval_approver_ids"
+          value={JSON.stringify(approvers.map((a) => a.profile_id))}
+        />
         <input type="hidden" name="save_to_list_enabled" value={String(saveToListEnabled)} />
         <input type="hidden" name="target_list_id" value={targetListId} />
         <input type="hidden" name="is_public" value={String(isPublic)} />
@@ -156,48 +182,109 @@ export function FormSettingsPanel({ form, workspaceLists, departments, profiles 
             </div>
           </CardHeader>
           {approvalEnabled && (
-            <CardContent className="space-y-3">
-              <Label className="text-sm">Approval Chain</Label>
-              {approvalSteps.length === 0 && (
-                <p className="text-sm text-muted-foreground">No steps configured.</p>
-              )}
+            <CardContent className="space-y-4">
+              {/* Approval Mode */}
               <div className="space-y-2">
-                {approvalSteps.map((step, index) => (
-                  <div
-                    key={index}
-                    className="flex items-center gap-2 px-3 py-2 rounded-md border bg-muted/30"
-                  >
-                    <GripVertical className="h-4 w-4 text-muted-foreground" />
-                    <Badge variant="outline" className="text-xs">Step {step.step_order}</Badge>
-                    <span className="flex-1 text-sm capitalize">{step.role}</span>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      className="h-6 w-6 text-muted-foreground hover:text-destructive"
-                      onClick={() => removeApprovalStep(index)}
-                    >
-                      <X className="h-3.5 w-3.5" />
-                    </Button>
-                  </div>
-                ))}
+                <Label className="text-sm">Approval Mode</Label>
+                <div className="flex flex-col gap-2">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="_approval_mode_ui"
+                      value="hierarchical"
+                      checked={approvalMode === "hierarchical"}
+                      onChange={() => setApprovalMode("hierarchical")}
+                      className="accent-primary"
+                    />
+                    <span className="text-sm">Hierarchical — approvers must approve in order</span>
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="_approval_mode_ui"
+                      value="any_one"
+                      checked={approvalMode === "any_one"}
+                      onChange={() => setApprovalMode("any_one")}
+                      className="accent-primary"
+                    />
+                    <span className="text-sm">Any One — any single approver can approve</span>
+                  </label>
+                </div>
               </div>
-              <div className="flex gap-2">
-                <Select value={newRole} onValueChange={(v) => setNewRole(v ?? "")}>
-                  <SelectTrigger className="flex-1">
-                    <SelectValue placeholder="Select role..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {AVAILABLE_ROLES.map((r) => (
-                      <SelectItem key={r.value} value={r.value}>
-                        {r.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <Button type="button" variant="outline" onClick={addApprovalStep} disabled={!newRole}>
-                  <Plus className="h-4 w-4" />
-                </Button>
+
+              <Separator />
+
+              {/* Approvers list */}
+              <div className="space-y-2">
+                <Label className="text-sm">Approvers</Label>
+                {approvers.length === 0 && (
+                  <p className="text-sm text-muted-foreground">No approvers added yet.</p>
+                )}
+                <div className="space-y-1.5">
+                  {approvers.map((approver, index) => (
+                    <div
+                      key={approver.profile_id}
+                      className="flex items-center gap-2 px-3 py-2 rounded-md border bg-muted/30"
+                    >
+                      <GripVertical className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                      {approvalMode === "hierarchical" && (
+                        <Badge variant="outline" className="text-xs flex-shrink-0">
+                          Step {index + 1}
+                        </Badge>
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium truncate">{approver.name}</p>
+                        <p className="text-xs text-muted-foreground truncate">{approver.email}</p>
+                      </div>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="h-6 w-6 text-muted-foreground hover:text-destructive flex-shrink-0"
+                        onClick={() => removeApprover(approver.profile_id)}
+                      >
+                        <X className="h-3.5 w-3.5" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Add Approver */}
+              <div className="space-y-1.5">
+                <Label className="text-sm">Add Approver</Label>
+                <Input
+                  placeholder="Search by name or email..."
+                  value={approverSearch}
+                  onChange={(e) => setApproverSearch(e.target.value)}
+                  className="text-sm"
+                />
+                {approverSearch && filteredProfiles.length > 0 && (
+                  <div className="border rounded-md divide-y max-h-40 overflow-y-auto">
+                    {filteredProfiles.map((profile) => {
+                      const name =
+                        [profile.first_name, profile.last_name].filter(Boolean).join(" ") ||
+                        profile.email;
+                      return (
+                        <button
+                          key={profile.id}
+                          type="button"
+                          className="w-full flex items-center gap-3 px-3 py-2 text-left hover:bg-muted/50 transition-colors"
+                          onClick={() => addApprover(profile)}
+                        >
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium truncate">{name}</p>
+                            <p className="text-xs text-muted-foreground truncate">{profile.email}</p>
+                          </div>
+                          <Plus className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+                {approverSearch && filteredProfiles.length === 0 && (
+                  <p className="text-xs text-muted-foreground px-1">No matching profiles found.</p>
+                )}
               </div>
             </CardContent>
           )}

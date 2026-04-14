@@ -2,8 +2,17 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { createClient as createSupabaseAdminClient } from "@supabase/supabase-js";
 import { formatFullName } from "@/lib/utils/format";
 import { sendNotification } from "@/lib/actions/notifications";
+
+/** Admin (service-role) client — bypasses RLS. Only used for public form submissions. */
+function getAdminClient() {
+  return createSupabaseAdminClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  );
+}
 
 // ─── Submit ───────────────────────────────────────────────────────────────────
 
@@ -17,8 +26,12 @@ import { sendNotification } from "@/lib/actions/notifications";
  * If the current user is authenticated, sets submitted_by and marks
  * any pending assignment as completed.
  *
+ * Public submissions (unauthenticated + is_public form) use the admin client
+ * to bypass RLS, since the RLS insert policy cannot evaluate company_id when
+ * there is no session.
+ *
  * If save_to_list_enabled, creates a workspace_task in the target list.
- * If approval_enabled, attempts to trigger an approval chain.
+ * If approval_enabled, creates form_submission_approvals + steps.
  */
 export async function submitForm(
   formId: string,
@@ -32,15 +45,25 @@ export async function submitForm(
     data: { user },
   } = await supabase.auth.getUser();
 
-  // Fetch the form for settings + company
+  // For public (unauthenticated) submissions use admin client to bypass RLS
+  const isPublicSubmission = !user;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: form } = await (supabase as any)
+  const db: any = isPublicSubmission ? getAdminClient() : supabase;
+
+  // Fetch the form for settings + company
+  const { data: form } = await db
     .from("forms")
-    .select("id, name, company_id, save_to_list_enabled, target_list_id, approval_enabled")
+    .select("id, name, company_id, save_to_list_enabled, target_list_id, approval_enabled, is_public, status")
     .eq("id", formId)
     .single();
 
   if (!form) return { error: "Form not found" };
+
+  // Gate: form must be published
+  if (form.status !== "published") return { error: "Form is not accepting submissions" };
+
+  // Gate: public users can only submit public forms
+  if (isPublicSubmission && !form.is_public) return { error: "This form requires authentication" };
 
   // Resolve submitter name for task name
   let submitterName = respondentName ?? "Anonymous";
@@ -55,8 +78,8 @@ export async function submitForm(
     }
   }
 
-  // Create submission
-  const { data: submission, error: subError } = await supabase
+  // Create submission — use admin client for public so RLS is not an obstacle
+  const { data: submission, error: subError } = await db
     .from("form_submissions")
     .insert({
       form_id: formId,
@@ -90,8 +113,10 @@ export async function submitForm(
 
   if (form.save_to_list_enabled && form.target_list_id) {
     try {
-      // Determine default status for the list
-      const { data: list } = await supabase
+      // Determine default status for the list (use authed or admin client)
+      const listClient = isPublicSubmission ? db : supabase;
+
+      const { data: list } = await listClient
         .from("workspace_lists")
         .select("folder_id, status_override")
         .eq("id", form.target_list_id)
@@ -101,7 +126,7 @@ export async function submitForm(
 
       if (list) {
         if (list.status_override) {
-          const { data: listStatus } = await supabase
+          const { data: listStatus } = await listClient
             .from("workspace_list_statuses")
             .select("id")
             .eq("list_id", form.target_list_id)
@@ -110,7 +135,7 @@ export async function submitForm(
             .single();
           firstStatusId = listStatus?.id ?? null;
         } else {
-          const { data: folderStatus } = await supabase
+          const { data: folderStatus } = await listClient
             .from("workspace_folder_statuses")
             .select("id")
             .eq("folder_id", list.folder_id)
@@ -127,7 +152,7 @@ export async function submitForm(
         .join("\n");
 
       // Get next task position in list
-      const { data: lastTask } = await supabase
+      const { data: lastTask } = await listClient
         .from("workspace_tasks")
         .select("position")
         .eq("list_id", form.target_list_id)
@@ -138,8 +163,7 @@ export async function submitForm(
 
       const nextPosition = lastTask ? lastTask.position + 1 : 0;
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data: task } = await (supabase as any)
+      const { data: task } = await db
         .from("workspace_tasks")
         .insert({
           list_id: form.target_list_id,
@@ -157,7 +181,7 @@ export async function submitForm(
         workspaceTaskId = task.id;
 
         // Update submission with workspace task reference
-        await supabase
+        await db
           .from("form_submissions")
           .update({ saved_to_list: true, workspace_task_id: task.id })
           .eq("id", submissionId);
@@ -168,20 +192,70 @@ export async function submitForm(
     }
   }
 
-  // Trigger approval chain if enabled
-  if (form.approval_enabled && user) {
+  // Trigger new v2 approval flow if enabled
+  if (form.approval_enabled) {
     try {
-      const { createApprovalRequest } = await import("@/lib/actions/approvals");
-      await createApprovalRequest({
-        companyId: form.company_id,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        type: "form_submission" as any,
-        referenceId: submissionId,
-        requesterId: user.id,
-        details: `Form submission: ${form.name} by ${submitterName}`,
-      });
+      // Fetch approval config + approvers — admin client so public submissions can read
+      const { data: approvalConfig } = await db
+        .from("form_approval_configs")
+        .select(
+          `
+          id,
+          approval_mode,
+          form_approvers(profile_id, step_order)
+        `
+        )
+        .eq("form_id", formId)
+        .single();
+
+      if (approvalConfig && Array.isArray(approvalConfig.form_approvers) && approvalConfig.form_approvers.length > 0) {
+        const approvers: Array<{ profile_id: string; step_order: number }> =
+          (approvalConfig.form_approvers as Array<{ profile_id: string; step_order: number }>)
+            .sort((a, b) => a.step_order - b.step_order);
+
+        const approvalMode: "hierarchical" | "any_one" = approvalConfig.approval_mode ?? "hierarchical";
+
+        // Create the submission approval record
+        const { data: approvalRecord } = await db
+          .from("form_submission_approvals")
+          .insert({
+            submission_id: submissionId,
+            status: "pending",
+            approval_mode: approvalMode,
+          })
+          .select("id")
+          .single();
+
+        if (approvalRecord) {
+          // Create individual step records
+          const stepInserts = approvers.map((a) => ({
+            submission_approval_id: approvalRecord.id,
+            approver_id: a.profile_id,
+            step_order: a.step_order,
+            status: "pending",
+          }));
+
+          await db.from("form_submission_approval_steps").insert(stepInserts);
+
+          // Send notifications
+          // hierarchical: only first approver; any_one: all approvers
+          const toNotify =
+            approvalMode === "hierarchical" ? [approvers[0]] : approvers;
+
+          for (const approver of toNotify) {
+            await sendNotification({
+              companyId: form.company_id,
+              recipientId: approver.profile_id,
+              type: "form_approval_requested",
+              title: "Form approval requested",
+              message: `A new submission for "${form.name}" requires your approval.`,
+              link: `/forms/${formId}/submissions`,
+            });
+          }
+        }
+      }
     } catch (err) {
-      // Approval type may not be supported — skip silently
+      // Non-fatal: approval creation failure should not block submission
       console.warn("Form approval chain skipped:", err);
     }
   }
@@ -198,14 +272,24 @@ export async function submitForm(
  * Upload a file attachment for a form submission.
  * Stores at: {company_id}/forms/{form_id}/{submission_id}/{uuid}.{ext}
  * Returns the public URL.
+ *
+ * Public (unauthenticated) submissions use the admin client so storage RLS
+ * does not block the upload.
  */
 export async function uploadFormFile(formId: string, submissionId: string, file: File) {
   const supabase = await createClient();
 
-  // Allow unauthenticated uploads for public forms
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  // For unauthenticated uploads use admin client to bypass storage RLS
+  const isPublicUpload = !user;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const db: any = isPublicUpload ? getAdminClient() : supabase;
 
   // Get company_id from form
-  const { data: form } = await supabase
+  const { data: form } = await db
     .from("forms")
     .select("company_id")
     .eq("id", formId)
@@ -216,11 +300,11 @@ export async function uploadFormFile(formId: string, submissionId: string, file:
   const ext = file.name.split(".").pop();
   const path = `${form.company_id}/forms/${formId}/${submissionId}/${crypto.randomUUID()}.${ext}`;
 
-  const { error } = await supabase.storage.from("vizportal-storage").upload(path, file);
+  const { error } = await db.storage.from("vizportal-storage").upload(path, file);
 
   if (error) return { error: "Failed to upload file" };
 
-  const { data: publicUrlData } = supabase.storage
+  const { data: publicUrlData } = db.storage
     .from("vizportal-storage")
     .getPublicUrl(path);
 
@@ -332,7 +416,206 @@ export async function getMyFormSubmissions() {
   return data ?? [];
 }
 
-// ─── Approve / Reject ─────────────────────────────────────────────────────────
+// ─── New v2 Approval Actions ──────────────────────────────────────────────────
+
+/**
+ * Get all pending approval steps assigned to the current user across all forms.
+ */
+export async function getMyPendingFormApprovals() {
+  const supabase = await createClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return [];
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data } = await (supabase as any)
+    .from("form_submission_approval_steps")
+    .select(
+      `
+      *,
+      form_submission_approvals(
+        id,
+        status,
+        approval_mode,
+        form_submissions(
+          id,
+          submitted_at,
+          respondent_name,
+          respondent_email,
+          forms:form_id(id, name)
+        )
+      )
+    `
+    )
+    .eq("approver_id", user.id)
+    .eq("status", "pending")
+    .order("created_at", { ascending: true });
+
+  return data ?? [];
+}
+
+/**
+ * Process a form approval step — approve or reject.
+ *
+ * Hierarchical mode:
+ *   - Approval: if all steps approved → mark submission_approval + submission as approved.
+ *     If this is not the last step, notify the next approver.
+ *   - Rejection: immediately rejects the submission_approval + submission.
+ *
+ * Any-one mode:
+ *   - Any approval → immediately approve the whole submission.
+ *   - Rejection: only reject if ALL approvers have rejected.
+ */
+export async function processFormApproval(
+  stepId: string,
+  decision: "approved" | "rejected",
+  comment?: string
+) {
+  const supabase = await createClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Not authenticated" };
+
+  // Fetch the step
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: step } = await (supabase as any)
+    .from("form_submission_approval_steps")
+    .select("*")
+    .eq("id", stepId)
+    .eq("approver_id", user.id)
+    .eq("status", "pending")
+    .single();
+
+  if (!step) return { error: "Approval step not found or not actionable" };
+
+  // Update the step
+  await supabase
+    .from("form_submission_approval_steps" as "workspace_task_approval_steps")
+    .update({
+      status: decision,
+      comment: comment ?? null,
+      decided_at: new Date().toISOString(),
+    } as never)
+    .eq("id", stepId);
+
+  // Fetch all steps for this approval record
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: allSteps } = await (supabase as any)
+    .from("form_submission_approval_steps")
+    .select("id, approver_id, step_order, status")
+    .eq("submission_approval_id", step.submission_approval_id)
+    .order("step_order", { ascending: true });
+
+  // Fetch the approval record for mode + submission_id
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: approvalRecord } = await (supabase as any)
+    .from("form_submission_approvals")
+    .select("id, submission_id, approval_mode, status")
+    .eq("id", step.submission_approval_id)
+    .single();
+
+  if (!approvalRecord || !allSteps) return { error: "Approval record not found" };
+
+  // Fetch form info for notification
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: submission } = await (supabase as any)
+    .from("form_submissions")
+    .select("id, submitted_by, company_id, forms:form_id(id, name)")
+    .eq("id", approvalRecord.submission_id)
+    .single();
+
+  const mode: "hierarchical" | "any_one" = approvalRecord.approval_mode;
+
+  let finalStatus: "approved" | "rejected" | null = null;
+
+  if (mode === "hierarchical") {
+    if (decision === "rejected") {
+      finalStatus = "rejected";
+    } else {
+      // Check if all steps approved
+      const updatedSteps = allSteps.map((s: { id: string; status: string }) =>
+        s.id === stepId ? { ...s, status: decision } : s
+      );
+      const allApproved = updatedSteps.every((s: { status: string }) => s.status === "approved");
+
+      if (allApproved) {
+        finalStatus = "approved";
+      } else {
+        // Notify next pending approver
+        const nextStep = updatedSteps.find((s: { status: string; approver_id: string }) => s.status === "pending");
+        if (nextStep && submission) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const form = (submission as any).forms;
+          await sendNotification({
+            companyId: submission.company_id,
+            recipientId: nextStep.approver_id,
+            type: "form_approval_requested",
+            title: "Form approval requested",
+            message: `A new submission for "${form?.name ?? "a form"}" requires your approval.`,
+            link: `/forms/${form?.id}/submissions`,
+          });
+        }
+      }
+    }
+  } else {
+    // any_one mode
+    if (decision === "approved") {
+      finalStatus = "approved";
+    } else {
+      // Only reject if all have rejected
+      const updatedSteps = allSteps.map((s: { id: string; status: string }) =>
+        s.id === stepId ? { ...s, status: decision } : s
+      );
+      const allRejected = updatedSteps.every((s: { status: string }) => s.status === "rejected");
+      if (allRejected) {
+        finalStatus = "rejected";
+      }
+    }
+  }
+
+  if (finalStatus) {
+    // Update approval record
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await (supabase as any)
+      .from("form_submission_approvals")
+      .update({ status: finalStatus })
+      .eq("id", approvalRecord.id);
+
+    // Update submission status
+    await supabase
+      .from("form_submissions")
+      .update({ status: finalStatus })
+      .eq("id", approvalRecord.submission_id);
+
+    // Notify submitter
+    if (submission?.submitted_by) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const form = (submission as any).forms;
+      const actionLabel = finalStatus === "approved" ? "approved" : "rejected";
+      await sendNotification({
+        companyId: submission.company_id,
+        recipientId: submission.submitted_by,
+        type: finalStatus === "approved" ? "form_submission_approved" : "form_submission_rejected",
+        title: `Form submission ${actionLabel}`,
+        message: `Your submission for "${form?.name ?? "a form"}" has been ${actionLabel}.${comment ? ` Comment: ${comment}` : ""}`,
+        link: `/forms/my-forms`,
+      });
+    }
+
+    if (submission?.forms) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      revalidatePath(`/forms/${(submission.forms as any).id}/submissions`);
+    }
+  }
+
+  return { success: true, finalStatus };
+}
+
+// ─── Approve / Reject (legacy simple actions) ─────────────────────────────────
 
 /**
  * Approve a submission. Updates status and optionally updates the linked workspace task.

@@ -1876,36 +1876,82 @@ export type Database = {
         Row: {
           id: string;
           form_id: string;
+          approval_mode: "hierarchical" | "any_one";
           created_at: string;
           updated_at: string;
         };
         Insert: {
           id?: string;
           form_id: string;
+          approval_mode?: "hierarchical" | "any_one";
         };
-        Update: Record<string, never>;
+        Update: {
+          approval_mode?: "hierarchical" | "any_one";
+        };
         Relationships: [];
       };
-      form_approval_steps: {
+      form_approvers: {
         Row: {
           id: string;
           form_approval_config_id: string;
+          profile_id: string;
           step_order: number;
-          role: string;
-          is_optional: boolean;
           created_at: string;
         };
         Insert: {
           id?: string;
           form_approval_config_id: string;
+          profile_id: string;
           step_order: number;
-          role: string;
-          is_optional?: boolean;
         };
         Update: {
           step_order?: number;
-          role?: string;
-          is_optional?: boolean;
+        };
+        Relationships: [];
+      };
+      form_submission_approvals: {
+        Row: {
+          id: string;
+          submission_id: string;
+          status: "pending" | "approved" | "rejected";
+          approval_mode: "hierarchical" | "any_one";
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          submission_id: string;
+          status?: "pending" | "approved" | "rejected";
+          approval_mode: "hierarchical" | "any_one";
+        };
+        Update: {
+          status?: "pending" | "approved" | "rejected";
+        };
+        Relationships: [];
+      };
+      form_submission_approval_steps: {
+        Row: {
+          id: string;
+          submission_approval_id: string;
+          approver_id: string;
+          step_order: number;
+          status: "pending" | "approved" | "rejected";
+          comment: string | null;
+          decided_at: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          submission_approval_id: string;
+          approver_id: string;
+          step_order: number;
+          status?: "pending" | "approved" | "rejected";
+          comment?: string | null;
+          decided_at?: string | null;
+        };
+        Update: {
+          status?: "pending" | "approved" | "rejected";
+          comment?: string | null;
+          decided_at?: string | null;
         };
         Relationships: [];
       };

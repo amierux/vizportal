@@ -375,8 +375,11 @@ export async function reorderFields(sectionId: string, fieldIds: string[]) {
 
 /**
  * Update all form-level settings including approval config.
- * Approval steps are passed as a JSON array in formData["approval_steps"].
- * Each step: { step_order, role, is_optional }
+ *
+ * Approval config keys (new v2):
+ *   approval_enabled       "true" | "false"
+ *   approval_mode          "hierarchical" | "any_one"
+ *   approval_approver_ids  JSON string — array of profile UUIDs in step order
  */
 export async function updateFormSettings(_prevState: unknown, formData: FormData) {
   const supabase = await createClient();
@@ -433,16 +436,19 @@ export async function updateFormSettings(_prevState: unknown, formData: FormData
 
   if (updateError) return { error: "Failed to update form settings" };
 
-  // Handle approval config — delete + recreate steps from JSON
-  const approvalStepsRaw = formData.get("approval_steps") as string | null;
+  if (parsed.data.approval_enabled) {
+    // Parse new v2 approval fields
+    const approvalMode =
+      (formData.get("approval_mode") as "hierarchical" | "any_one") ?? "hierarchical";
+    const approverIdsRaw = formData.get("approval_approver_ids") as string | null;
+    let approverIds: string[] = [];
 
-  if (parsed.data.approval_enabled && approvalStepsRaw) {
-    let approvalSteps: Array<{ step_order: number; role: string; is_optional: boolean }> = [];
-
-    try {
-      approvalSteps = JSON.parse(approvalStepsRaw);
-    } catch {
-      return { error: "Invalid approval_steps JSON" };
+    if (approverIdsRaw) {
+      try {
+        approverIds = JSON.parse(approverIdsRaw);
+      } catch {
+        return { error: "Invalid approval_approver_ids JSON" };
+      }
     }
 
     // Upsert approval config
@@ -456,15 +462,23 @@ export async function updateFormSettings(_prevState: unknown, formData: FormData
 
     if (existingConfig) {
       configId = existingConfig.id;
-      // Delete old steps
-      await supabase
-        .from("form_approval_steps")
+      // Update approval_mode on existing config
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await (supabase as any)
+        .from("form_approval_configs")
+        .update({ approval_mode: approvalMode })
+        .eq("id", configId);
+      // Delete old approvers
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await (supabase as any)
+        .from("form_approvers")
         .delete()
         .eq("form_approval_config_id", configId);
     } else {
-      const { data: newConfig, error: configError } = await supabase
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data: newConfig, error: configError } = await (supabase as any)
         .from("form_approval_configs")
-        .insert({ form_id: formId })
+        .insert({ form_id: formId, approval_mode: approvalMode })
         .select("id")
         .single();
 
@@ -472,18 +486,18 @@ export async function updateFormSettings(_prevState: unknown, formData: FormData
       configId = newConfig.id;
     }
 
-    // Insert new steps
-    if (approvalSteps.length > 0) {
-      const stepInserts = approvalSteps.map((step) => ({
+    // Insert new user-based approvers
+    if (approverIds.length > 0) {
+      const approverInserts = approverIds.map((profileId, index) => ({
         form_approval_config_id: configId,
-        step_order: step.step_order,
-        role: step.role,
-        is_optional: step.is_optional ?? false,
+        profile_id: profileId,
+        step_order: index + 1,
       }));
 
-      await supabase.from("form_approval_steps").insert(stepInserts);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await (supabase as any).from("form_approvers").insert(approverInserts);
     }
-  } else if (!parsed.data.approval_enabled) {
+  } else {
     // Remove approval config if disabled
     await supabase.from("form_approval_configs").delete().eq("form_id", formId);
   }
