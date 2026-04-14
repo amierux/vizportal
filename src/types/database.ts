@@ -10,6 +10,8 @@ export type Database = {
           name: string;
           logo_url: string | null;
           favicon_url: string | null;
+          timezone: string;
+          holiday_country: string;
           business_manager_id: string | null;
           director_id: string | null;
           created_at: string;
@@ -20,6 +22,8 @@ export type Database = {
           name: string;
           logo_url?: string | null;
           favicon_url?: string | null;
+          timezone?: string;
+          holiday_country?: string;
           business_manager_id?: string | null;
           director_id?: string | null;
         };
@@ -27,6 +31,8 @@ export type Database = {
           name?: string;
           logo_url?: string | null;
           favicon_url?: string | null;
+          timezone?: string;
+          holiday_country?: string;
           business_manager_id?: string | null;
           director_id?: string | null;
         };
@@ -345,6 +351,7 @@ export type Database = {
           longitude: number | null;
           is_manual: boolean;
           manual_remarks: string | null;
+          attachment_url: string | null;
           date: string;
           created_at: string;
         };
@@ -359,11 +366,13 @@ export type Database = {
           longitude?: number | null;
           is_manual?: boolean;
           manual_remarks?: string | null;
+          attachment_url?: string | null;
           date: string;
         };
         Update: {
           is_manual?: boolean;
           manual_remarks?: string | null;
+          attachment_url?: string | null;
         };
         Relationships: [];
       };
@@ -432,6 +441,7 @@ export type Database = {
           is_carry_over: boolean;
           max_carry_over_days: number;
           is_active: boolean;
+          requires_reliever: boolean;
           created_at: string;
           updated_at: string;
         };
@@ -447,6 +457,7 @@ export type Database = {
           is_carry_over?: boolean;
           max_carry_over_days?: number;
           is_active?: boolean;
+          requires_reliever?: boolean;
         };
         Update: {
           name?: string;
@@ -458,6 +469,7 @@ export type Database = {
           is_carry_over?: boolean;
           max_carry_over_days?: number;
           is_active?: boolean;
+          requires_reliever?: boolean;
         };
         Relationships: [];
       };
@@ -633,6 +645,127 @@ export type Database = {
         Update: {
           value?: string;
           is_secret?: boolean;
+        };
+        Relationships: [];
+      };
+      non_working_days: {
+        Row: {
+          id: string;
+          company_id: string;
+          name: string;
+          date: string;
+          is_recurring: boolean;
+          country: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          company_id: string;
+          name: string;
+          date: string;
+          is_recurring?: boolean;
+          country?: string;
+        };
+        Update: {
+          name?: string;
+          date?: string;
+          is_recurring?: boolean;
+          country?: string;
+        };
+        Relationships: [];
+      };
+      overtime_requests: {
+        Row: {
+          id: string;
+          company_id: string;
+          profile_id: string;
+          date: string;
+          start_time: string;
+          end_time: string;
+          total_hours: number;
+          reason: string;
+          attachment_url: string | null;
+          status: "pending" | "approved" | "rejected" | "cancelled";
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          company_id: string;
+          profile_id: string;
+          date: string;
+          start_time: string;
+          end_time: string;
+          total_hours: number;
+          reason: string;
+          attachment_url?: string | null;
+          status?: "pending" | "approved" | "rejected" | "cancelled";
+        };
+        Update: {
+          status?: "pending" | "approved" | "rejected" | "cancelled";
+          attachment_url?: string | null;
+        };
+        Relationships: [];
+      };
+      approval_configs: {
+        Row: {
+          id: string;
+          company_id: string;
+          type: string;
+          is_enabled: boolean;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          company_id: string;
+          type: string;
+          is_enabled?: boolean;
+        };
+        Update: {
+          is_enabled?: boolean;
+        };
+        Relationships: [];
+      };
+      approval_config_steps: {
+        Row: {
+          id: string;
+          approval_config_id: string;
+          step_order: number;
+          role: string;
+          is_optional: boolean;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          approval_config_id: string;
+          step_order: number;
+          role: string;
+          is_optional?: boolean;
+        };
+        Update: {
+          step_order?: number;
+          role?: string;
+          is_optional?: boolean;
+        };
+        Relationships: [];
+      };
+      leave_request_relievers: {
+        Row: {
+          id: string;
+          leave_request_id: string;
+          reliever_id: string;
+          tasks: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          leave_request_id: string;
+          reliever_id: string;
+          tasks: string;
+        };
+        Update: {
+          tasks?: string;
         };
         Relationships: [];
       };

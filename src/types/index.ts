@@ -20,6 +20,11 @@ export type LeaveRequest = Database["public"]["Tables"]["leave_requests"]["Row"]
 export type ApprovalRequest = Database["public"]["Tables"]["approval_requests"]["Row"];
 export type ApprovalStep = Database["public"]["Tables"]["approval_steps"]["Row"];
 export type SystemSetting = Database["public"]["Tables"]["system_settings"]["Row"];
+export type NonWorkingDay = Database["public"]["Tables"]["non_working_days"]["Row"];
+export type OvertimeRequest = Database["public"]["Tables"]["overtime_requests"]["Row"];
+export type ApprovalConfig = Database["public"]["Tables"]["approval_configs"]["Row"];
+export type ApprovalConfigStep = Database["public"]["Tables"]["approval_config_steps"]["Row"];
+export type LeaveRequestReliever = Database["public"]["Tables"]["leave_request_relievers"]["Row"];
 
 export type ApprovalType = "manual_clock" | "leave_request";
 export type AttendanceStatus = "present" | "late" | "absent" | "half_day" | "on_leave";
