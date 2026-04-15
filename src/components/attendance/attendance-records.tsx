@@ -248,6 +248,7 @@ function AttendanceDetailContent({ viewing }: { viewing: any }) {
 
   useEffect(() => {
     let cancelled = false;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setLoaded(false);
     getClockEntriesByDate(viewing.profile_id ?? viewing.profiles?.id, viewing.date).then((data) => {
       if (!cancelled) {
