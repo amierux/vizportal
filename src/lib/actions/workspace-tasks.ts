@@ -160,7 +160,8 @@ export async function getTasks(
       workspace_task_checklists(
         id,
         workspace_checklist_items(id, is_checked)
-      )
+      ),
+      workspace_task_remarks(id, content, created_at, profile_id)
     `
     )
     .eq("list_id", listId)
@@ -938,6 +939,25 @@ export async function addRemark(_prevState: unknown, formData: FormData) {
   if (error) return { error: "Failed to add remark" };
 
   revalidatePath(`/workspace/tasks/${taskId}`);
+  return { success: true };
+}
+
+/**
+ * Add a remark via direct args (for inline list view).
+ */
+export async function addTaskRemark(taskId: string, content: string) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { error: "Not authenticated" };
+  if (!content.trim()) return { error: "Empty remark" };
+
+  const { error } = await supabase.from("workspace_task_remarks").insert({
+    task_id: taskId,
+    profile_id: user.id,
+    content: content.trim(),
+  });
+  if (error) return { error: "Failed to add remark" };
+  revalidatePath("/workspace");
   return { success: true };
 }
 

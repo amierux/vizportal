@@ -29,7 +29,7 @@ import { buttonVariants } from "@/components/ui/button";
 import { formatFullName } from "@/lib/utils/format";
 import { ChevronUp, ChevronDown, ChevronsUpDown, Settings2 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { updateTaskField } from "@/lib/actions/workspace-tasks";
+import { updateTaskField, addTaskRemark } from "@/lib/actions/workspace-tasks";
 import { toast } from "sonner";
 
 const PRIORITY_COLORS: Record<string, string> = {
@@ -80,6 +80,12 @@ type Task = {
   workspace_task_checklists?: {
     workspace_checklist_items: { is_checked: boolean }[];
   }[];
+  workspace_task_remarks?: {
+    id: string;
+    content: string;
+    created_at: string;
+    profile_id: string;
+  }[];
 };
 
 type Status = {
@@ -129,7 +135,7 @@ const PRIORITY_RANK: Record<string, number> = {
   none: 4,
 };
 
-const ALL_COLUMNS = ["pic", "status", "priority", "start", "due", "progress"] as const;
+const ALL_COLUMNS = ["pic", "status", "priority", "start", "due", "remarks"] as const;
 type ColId = typeof ALL_COLUMNS[number];
 
 export function TaskListView({ tasks, statuses, members, onStatusChange }: TaskListViewProps) {
@@ -140,7 +146,24 @@ export function TaskListView({ tasks, statuses, members, onStatusChange }: TaskL
   const [sortDir, setSortDir] = useState<SortDir>("asc");
   const [isPending, startTransition] = useTransition();
   const [editingNameId, setEditingNameId] = useState<string | null>(null);
+  const [editingRemarkId, setEditingRemarkId] = useState<string | null>(null);
+  const [remarkDraft, setRemarkDraft] = useState("");
   const [visibleCols, setVisibleCols] = useState<Set<ColId>>(new Set(ALL_COLUMNS));
+
+  function handleAddRemark(taskId: string) {
+    const content = remarkDraft.trim();
+    if (!content) {
+      setEditingRemarkId(null);
+      return;
+    }
+    startTransition(async () => {
+      const result = await addTaskRemark(taskId, content);
+      if (result && "error" in result) toast.error(result.error);
+      else toast.success("Remark added");
+      setEditingRemarkId(null);
+      setRemarkDraft("");
+    });
+  }
 
   function handleSort(field: SortField) {
     if (sortField === field) {
@@ -381,10 +404,43 @@ export function TaskListView({ tasks, statuses, members, onStatusChange }: TaskL
             </TableCell>
           )}
 
-          {/* Progress */}
-          {visibleCols.has("progress") && (
-            <TableCell className="text-sm text-muted-foreground">
-              {getProgress(task)}
+          {/* Remarks — shows last remark; click to add new */}
+          {visibleCols.has("remarks") && (
+            <TableCell className="text-sm">
+              {editingRemarkId === task.id ? (
+                <Input
+                  autoFocus
+                  value={remarkDraft}
+                  placeholder="Add remark..."
+                  className="h-7 text-xs"
+                  onChange={(e) => setRemarkDraft(e.target.value)}
+                  onBlur={() => handleAddRemark(task.id)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") (e.target as HTMLInputElement).blur();
+                    if (e.key === "Escape") {
+                      setEditingRemarkId(null);
+                      setRemarkDraft("");
+                    }
+                  }}
+                />
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setEditingRemarkId(task.id);
+                    setRemarkDraft("");
+                  }}
+                  className="block w-full text-left max-w-[240px] truncate text-muted-foreground hover:text-foreground cursor-text"
+                  title={(task.workspace_task_remarks ?? []).slice(-1)[0]?.content ?? "Click to add remark"}
+                >
+                  {(() => {
+                    const last = (task.workspace_task_remarks ?? [])
+                      .slice()
+                      .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())[0];
+                    return last?.content ?? <span className="italic">+ Add remark</span>;
+                  })()}
+                </button>
+              )}
             </TableCell>
           )}
         </TableRow>
@@ -399,7 +455,7 @@ export function TaskListView({ tasks, statuses, members, onStatusChange }: TaskL
     { id: "priority", label: "Priority" },
     { id: "start", label: "Start Date" },
     { id: "due", label: "Due Date" },
-    { id: "progress", label: "Progress" },
+    { id: "remarks", label: "Remarks" },
   ];
 
   return (
@@ -521,7 +577,7 @@ export function TaskListView({ tasks, statuses, members, onStatusChange }: TaskL
                   </span>
                 </TableHead>
               )}
-              {visibleCols.has("progress") && <TableHead>Progress</TableHead>}
+              {visibleCols.has("remarks") && <TableHead>Remarks</TableHead>}
             </TableRow>
           </TableHeader>
           <TableBody>
