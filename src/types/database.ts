@@ -187,6 +187,9 @@ export type Database = {
           employment_status: "probationary" | "regular" | "resigned" | "terminated";
           bank_name: string | null;
           bank_account_number: string | null;
+          break_enabled: boolean;
+          break_start_time: string | null;
+          break_end_time: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -220,6 +223,9 @@ export type Database = {
           employment_status?: "probationary" | "regular" | "resigned" | "terminated";
           bank_name?: string | null;
           bank_account_number?: string | null;
+          break_enabled?: boolean;
+          break_start_time?: string | null;
+          break_end_time?: string | null;
         };
         Update: {
           department_id?: string | null;
@@ -248,6 +254,9 @@ export type Database = {
           employment_status?: "probationary" | "regular" | "resigned" | "terminated";
           bank_name?: string | null;
           bank_account_number?: string | null;
+          break_enabled?: boolean;
+          break_start_time?: string | null;
+          break_end_time?: string | null;
         };
         Relationships: [];
       };

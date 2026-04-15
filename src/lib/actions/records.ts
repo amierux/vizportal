@@ -106,10 +106,11 @@ export async function getAttendanceRecords(filters: {
         byKey.get(k)!.push(e);
       }
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      results = results.map((r: any) => ({
+      results = (results as any[]).map((r: any) => ({
         ...r,
         clock_entries: byKey.get(`${r.profile_id}|${r.date}`) ?? [],
-      }));
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      })) as any;
     }
   }
 
