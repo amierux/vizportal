@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
-import { sendEmail, buildApprovalEmail, buildStatusEmail } from "@/lib/utils/email";
+import { sendEmail, buildApprovalEmail, buildStatusEmail, buildReminderEmail } from "@/lib/utils/email";
 import { formatFullName } from "@/lib/utils/format";
 import { getSystemSetting } from "@/lib/utils/settings";
 
@@ -581,6 +581,102 @@ export async function getMyPendingApprovals() {
     const req = step.approval_requests;
     return req && req.status === "pending" && req.current_step === step.step_order;
   });
+}
+
+/**
+ * Get the approval chain detail for a request by type + reference_id.
+ * Returns the approval_request + steps with approver names.
+ */
+export async function getRequestApprovalDetail(type: string, referenceId: string) {
+  const supabase = await createClient();
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: request } = await (supabase as any)
+    .from("approval_requests")
+    .select(`
+      id, type, status, current_step, total_steps, created_at,
+      approval_steps(
+        id, approver_id, step_order, status, comment, decided_at, email_sent_at, reminder_sent_at,
+        approver:profiles!approval_steps_approver_id_fkey(first_name, last_name, email)
+      )
+    `)
+    .eq("type", type)
+    .eq("reference_id", referenceId)
+    .single();
+
+  if (!request) return null;
+
+  // Sort steps by step_order
+  if (Array.isArray(request.approval_steps)) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    request.approval_steps.sort((a: any, b: any) => a.step_order - b.step_order);
+  }
+
+  return request;
+}
+
+/**
+ * Send a follow-up email to the current pending approver(s) for a request.
+ * Updates reminder_sent_at on the steps.
+ */
+export async function followUpApproval(type: string, referenceId: string) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { error: "Not authenticated" };
+
+  const detail = await getRequestApprovalDetail(type, referenceId);
+  if (!detail) return { error: "Approval request not found" };
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const pendingSteps = ((detail as any).approval_steps ?? []).filter(
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (s: any) => s.status === "pending" && s.step_order === detail.current_step
+  );
+
+  if (pendingSteps.length === 0) return { error: "No pending approver to follow up with" };
+
+  // Get requester name
+  const { data: requesterProfile } = await supabase
+    .from("profiles")
+    .select("first_name, last_name")
+    .eq("id", user.id)
+    .single();
+  const requesterName = requesterProfile
+    ? `${requesterProfile.first_name ?? ""} ${requesterProfile.last_name ?? ""}`.trim()
+    : "Requester";
+
+  const appUrl = (await getSystemSetting("app_url")) ?? "https://vizportal.vercel.app";
+
+  const daysPending = Math.max(
+    1,
+    Math.floor((Date.now() - new Date(detail.created_at).getTime()) / (1000 * 60 * 60 * 24))
+  );
+
+  let sent = 0;
+  for (const step of pendingSteps) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const approver = (step as any).approver;
+    if (!approver?.email) continue;
+
+    const approverName = `${approver.first_name ?? ""} ${approver.last_name ?? ""}`.trim();
+    const approvalUrl = `${appUrl}/approvals/${step.token}`;
+    const email = buildReminderEmail({
+      approverName,
+      requesterName,
+      type,
+      approvalUrl,
+      daysPending,
+    });
+    await sendEmail({ to: approver.email, ...email });
+
+    await supabase
+      .from("approval_steps")
+      .update({ reminder_sent_at: new Date().toISOString() })
+      .eq("id", step.id);
+    sent++;
+  }
+
+  return { success: true, sent };
 }
 
 /**
