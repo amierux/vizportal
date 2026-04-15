@@ -1,10 +1,9 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect, notFound } from "next/navigation";
-import { getList, getLists } from "@/lib/actions/workspace-lists";
+import { getList } from "@/lib/actions/workspace-lists";
 import { getTasks } from "@/lib/actions/workspace-tasks";
 import { getFolder } from "@/lib/actions/workspace-folders";
-import { getChecklistTemplates, getListTemplates } from "@/lib/actions/workspace-templates";
-import { ListSidebar } from "@/components/workspace/list-sidebar";
+import { getChecklistTemplates } from "@/lib/actions/workspace-templates";
 import { TaskCreateDialog } from "@/components/workspace/task-create-dialog";
 import { FolderViewClient } from "@/components/workspace/folder-view-client";
 
@@ -24,13 +23,11 @@ export default async function ListViewPage({ params, searchParams }: PageProps) 
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
-  const [list, folder, lists, tasks, checklistTemplates, listTemplates] = await Promise.all([
+  const [list, folder, tasks, checklistTemplates] = await Promise.all([
     getList(listId),
     getFolder(folderId),
-    getLists(folderId),
     getTasks(listId),
     getChecklistTemplates(),
-    getListTemplates(),
   ]);
 
   if (!list || !folder) notFound();
@@ -55,43 +52,31 @@ export default async function ListViewPage({ params, searchParams }: PageProps) 
 
   const activeView = (viewParam === "kanban" ? "kanban" : "list") as "list" | "kanban";
 
-  void checklistTemplates; // available for future use (TaskCreateDialog doesn't need them currently)
+  void checklistTemplates; // available for future use
 
   return (
-    <div className="flex h-full -m-4 md:-m-6 overflow-hidden">
-      {/* Sidebar */}
-      <ListSidebar
-        lists={lists.map((l) => ({ id: l.id, name: l.name }))}
-        folderId={folderId}
-        folderName={folder.name}
-        activeListId={listId}
-        templates={listTemplates.map((t) => ({ id: t.id, name: t.name }))}
-      />
+    <div className="flex flex-col h-full overflow-hidden">
+      {/* Header */}
+      <div className="flex items-center justify-between pb-3 border-b shrink-0">
+        <h1 className="text-xl font-bold">{list.name}</h1>
+        <TaskCreateDialog
+          listId={listId}
+          members={members}
+          triggerLabel="New Task"
+          triggerVariant="default"
+          triggerSize="sm"
+        />
+      </div>
 
-      {/* Main content */}
-      <div className="flex-1 flex flex-col overflow-hidden">
-        {/* Header */}
-        <div className="flex items-center justify-between px-4 py-3 border-b shrink-0">
-          <h1 className="text-xl font-bold">{list.name}</h1>
-          <TaskCreateDialog
-            listId={listId}
-            members={members}
-            triggerLabel="New Task"
-            triggerVariant="default"
-            triggerSize="sm"
-          />
-        </div>
-
-        {/* View area */}
-        <div className="flex-1 overflow-auto p-4">
-          <FolderViewClient
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            tasks={tasks as any}
-            statuses={statuses}
-            members={members}
-            initialView={activeView}
-          />
-        </div>
+      {/* View area */}
+      <div className="flex-1 overflow-auto pt-4">
+        <FolderViewClient
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          tasks={tasks as any}
+          statuses={statuses}
+          members={members}
+          initialView={activeView}
+        />
       </div>
     </div>
   );

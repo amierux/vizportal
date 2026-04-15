@@ -1310,3 +1310,33 @@ export async function deleteChecklistItem(itemId: string) {
   }
   return { success: true };
 }
+
+/**
+ * Update a single field on a task. Designed for inline editing in list view.
+ */
+export async function updateTaskField(
+  taskId: string,
+  field: "name" | "assignee_id" | "priority" | "start_date" | "target_end_date",
+  value: string | null
+) {
+  const supabase = await createClient();
+  // Build a typed update payload accepted by Supabase's strict types
+  type TaskUpdate = {
+    name?: string | null;
+    assignee_id?: string | null;
+    priority?: string | null;
+    start_date?: string | null;
+    target_end_date?: string | null;
+  };
+  const updateData: TaskUpdate = {};
+  if (field === "name") updateData.name = value;
+  else if (field === "assignee_id") updateData.assignee_id = value;
+  else if (field === "priority") updateData.priority = value;
+  else if (field === "start_date") updateData.start_date = value;
+  else if (field === "target_end_date") updateData.target_end_date = value;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { error } = await supabase.from("workspace_tasks").update(updateData as any).eq("id", taskId);
+  if (error) return { error: "Failed to update" };
+  revalidatePath("/workspace");
+  return { success: true };
+}

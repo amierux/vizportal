@@ -18,9 +18,19 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { formatFullName, formatDate } from "@/lib/utils/format";
-import { ChevronUp, ChevronDown, ChevronsUpDown } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Input } from "@/components/ui/input";
+import { buttonVariants } from "@/components/ui/button";
+import { formatFullName } from "@/lib/utils/format";
+import { ChevronUp, ChevronDown, ChevronsUpDown, Settings2 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { updateTaskField } from "@/lib/actions/workspace-tasks";
+import { toast } from "sonner";
 
 const PRIORITY_COLORS: Record<string, string> = {
   urgent: "bg-red-500",
@@ -29,6 +39,14 @@ const PRIORITY_COLORS: Record<string, string> = {
   low: "bg-blue-500",
   none: "bg-muted-foreground/30",
 };
+
+const PRIORITY_OPTIONS = [
+  { value: "urgent", label: "🔴 Urgent" },
+  { value: "high", label: "🟠 High" },
+  { value: "medium", label: "🟡 Medium" },
+  { value: "low", label: "🔵 Low" },
+  { value: "none", label: "— None" },
+];
 
 type Subtask = {
   id: string;
@@ -111,6 +129,9 @@ const PRIORITY_RANK: Record<string, number> = {
   none: 4,
 };
 
+const ALL_COLUMNS = ["pic", "status", "priority", "start", "due", "progress"] as const;
+type ColId = typeof ALL_COLUMNS[number];
+
 export function TaskListView({ tasks, statuses, members, onStatusChange }: TaskListViewProps) {
   const [filterStatus, setFilterStatus] = useState<string>("all");
   const [filterAssignee, setFilterAssignee] = useState<string>("all");
@@ -118,6 +139,8 @@ export function TaskListView({ tasks, statuses, members, onStatusChange }: TaskL
   const [sortField, setSortField] = useState<SortField>("name");
   const [sortDir, setSortDir] = useState<SortDir>("asc");
   const [isPending, startTransition] = useTransition();
+  const [editingNameId, setEditingNameId] = useState<string | null>(null);
+  const [visibleCols, setVisibleCols] = useState<Set<ColId>>(new Set(ALL_COLUMNS));
 
   function handleSort(field: SortField) {
     if (sortField === field) {
@@ -132,6 +155,19 @@ export function TaskListView({ tasks, statuses, members, onStatusChange }: TaskL
     startTransition(async () => {
       if (onStatusChange) {
         await onStatusChange(taskId, statusId);
+      }
+    });
+  }
+
+  function handleFieldUpdate(
+    taskId: string,
+    field: "name" | "assignee_id" | "priority" | "start_date" | "target_end_date",
+    value: string | null
+  ) {
+    startTransition(async () => {
+      const result = await updateTaskField(taskId, field, value);
+      if (result && "error" in result) {
+        toast.error(result.error);
       }
     });
   }
@@ -175,6 +211,8 @@ export function TaskListView({ tasks, statuses, members, onStatusChange }: TaskL
     return sortDir === "asc" ? cmp : -cmp;
   });
 
+  const colCount = 1 + Array.from(visibleCols).length; // name + visible cols
+
   function renderTaskRow(task: Task, depth = 0): React.ReactNode {
     const status = statuses.find((s) => s.id === task.status_id);
     const priorityColor = PRIORITY_COLORS[task.priority] ?? PRIORITY_COLORS.none;
@@ -182,88 +220,192 @@ export function TaskListView({ tasks, statuses, members, onStatusChange }: TaskL
     return (
       <>
         <TableRow key={task.id} className="row-hover">
+          {/* Name — always visible */}
           <TableCell>
-            <Link
-              href={`/workspace/tasks/${task.id}`}
-              className="hover:underline font-medium"
-              style={{ paddingLeft: depth > 0 ? `${depth * 16}px` : undefined }}
-            >
-              {depth > 0 && (
-                <span className="mr-1 text-muted-foreground text-xs">↳</span>
-              )}
-              {task.name}
-            </Link>
-          </TableCell>
-          <TableCell>
-            {task.profiles ? (
-              <span className="text-sm">
-                {formatFullName(task.profiles.first_name, task.profiles.last_name)}
-              </span>
+            {editingNameId === task.id ? (
+              <Input
+                autoFocus
+                defaultValue={task.name}
+                className="h-7 text-sm"
+                style={{ paddingLeft: depth > 0 ? `${depth * 16}px` : undefined }}
+                onBlur={(e) => {
+                  handleFieldUpdate(task.id, "name", e.target.value);
+                  setEditingNameId(null);
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") (e.target as HTMLInputElement).blur();
+                  if (e.key === "Escape") setEditingNameId(null);
+                }}
+              />
             ) : (
-              <span className="text-muted-foreground text-sm">—</span>
+              <div className="flex items-center gap-1" style={{ paddingLeft: depth > 0 ? `${depth * 16}px` : undefined }}>
+                {depth > 0 && (
+                  <span className="mr-1 text-muted-foreground text-xs">↳</span>
+                )}
+                <span
+                  onClick={() => setEditingNameId(task.id)}
+                  className="cursor-text hover:underline font-medium"
+                >
+                  <Link href={`/workspace/tasks/${task.id}`} className="hover:underline" onClick={(e) => e.stopPropagation()}>
+                    {task.name}
+                  </Link>
+                </span>
+              </div>
             )}
           </TableCell>
-          <TableCell>
-            {onStatusChange ? (
+
+          {/* PIC */}
+          {visibleCols.has("pic") && (
+            <TableCell>
               <Select
-                value={task.status_id}
-                onValueChange={(v) => v && handleStatusChange(task.id, v)}
+                value={task.assignee_id ?? "_unassigned"}
+                onValueChange={(v) => {
+                  const newId = v === "_unassigned" ? null : v;
+                  handleFieldUpdate(task.id, "assignee_id", newId);
+                }}
                 disabled={isPending}
               >
-                <SelectTrigger
-                  className="h-7 w-36 text-xs border-0 rounded-full px-2"
-                  style={{
-                    backgroundColor: status ? `${status.color}20` : undefined,
-                    color: status?.color,
-                  }}
-                >
-                  <SelectValue />
+                <SelectTrigger className="h-7 w-36 text-xs border-0 shadow-none">
+                  <span className="truncate">
+                    {task.profiles
+                      ? formatFullName(task.profiles.first_name, task.profiles.last_name)
+                      : "Unassigned"}
+                  </span>
                 </SelectTrigger>
                 <SelectContent>
-                  {statuses.map((s) => (
-                    <SelectItem key={s.id} value={s.id}>
-                      {s.name}
+                  <SelectItem value="_unassigned">Unassigned</SelectItem>
+                  {members.map((m) => (
+                    <SelectItem key={m.id} value={m.id}>
+                      {formatFullName(m.first_name, m.last_name)}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
-            ) : (
-              status && (
-                <Badge
-                  variant="secondary"
-                  className="text-xs"
-                  style={{ backgroundColor: `${status.color}20`, color: status.color }}
+            </TableCell>
+          )}
+
+          {/* Status */}
+          {visibleCols.has("status") && (
+            <TableCell>
+              {onStatusChange ? (
+                <Select
+                  value={task.status_id}
+                  onValueChange={(v) => v && handleStatusChange(task.id, v)}
+                  disabled={isPending}
                 >
-                  {status.name}
-                </Badge>
-              )
-            )}
-          </TableCell>
-          <TableCell>
-            <div className="flex items-center gap-1.5">
-              <span className={cn("h-2 w-2 rounded-full", priorityColor)} />
-              <span className="text-xs capitalize">{task.priority}</span>
-            </div>
-          </TableCell>
-          <TableCell className="text-sm text-muted-foreground">
-            {formatDate(task.start_date)}
-          </TableCell>
-          <TableCell className="text-sm text-muted-foreground">
-            {formatDate(task.target_end_date)}
-          </TableCell>
-          <TableCell className="text-sm text-muted-foreground">
-            {getProgress(task)}
-          </TableCell>
+                  <SelectTrigger
+                    className="h-7 w-36 text-xs border-0 rounded-full px-2"
+                    style={{
+                      backgroundColor: status ? `${status.color}20` : undefined,
+                      color: status?.color,
+                    }}
+                  >
+                    <span className="truncate">{status?.name ?? "—"}</span>
+                  </SelectTrigger>
+                  <SelectContent>
+                    {statuses.map((s) => (
+                      <SelectItem key={s.id} value={s.id}>
+                        {s.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              ) : (
+                status && (
+                  <Badge
+                    variant="secondary"
+                    className="text-xs"
+                    style={{ backgroundColor: `${status.color}20`, color: status.color }}
+                  >
+                    {status.name}
+                  </Badge>
+                )
+              )}
+            </TableCell>
+          )}
+
+          {/* Priority */}
+          {visibleCols.has("priority") && (
+            <TableCell>
+              <Select
+                value={task.priority}
+                onValueChange={(v) => {
+                  if (v) handleFieldUpdate(task.id, "priority", v);
+                }}
+                disabled={isPending}
+              >
+                <SelectTrigger className="h-7 w-32 text-xs border-0 shadow-none">
+                  <div className="flex items-center gap-1.5">
+                    <span className={cn("h-2 w-2 rounded-full shrink-0", priorityColor)} />
+                    <span className="capitalize truncate">{task.priority}</span>
+                  </div>
+                </SelectTrigger>
+                <SelectContent>
+                  {PRIORITY_OPTIONS.map((p) => (
+                    <SelectItem key={p.value} value={p.value}>
+                      {p.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </TableCell>
+          )}
+
+          {/* Start date */}
+          {visibleCols.has("start") && (
+            <TableCell>
+              <Input
+                type="date"
+                value={task.start_date ?? ""}
+                onChange={(e) =>
+                  handleFieldUpdate(task.id, "start_date", e.target.value || null)
+                }
+                className="h-7 w-32 text-xs border-0 shadow-none px-1"
+                disabled={isPending}
+              />
+            </TableCell>
+          )}
+
+          {/* Due date */}
+          {visibleCols.has("due") && (
+            <TableCell>
+              <Input
+                type="date"
+                value={task.target_end_date ?? ""}
+                onChange={(e) =>
+                  handleFieldUpdate(task.id, "target_end_date", e.target.value || null)
+                }
+                className="h-7 w-32 text-xs border-0 shadow-none px-1"
+                disabled={isPending}
+              />
+            </TableCell>
+          )}
+
+          {/* Progress */}
+          {visibleCols.has("progress") && (
+            <TableCell className="text-sm text-muted-foreground">
+              {getProgress(task)}
+            </TableCell>
+          )}
         </TableRow>
         {(task.workspace_tasks ?? []).map((sub) => renderTaskRow(sub as Task, depth + 1))}
       </>
     );
   }
 
+  const colLabels: { id: ColId; label: string }[] = [
+    { id: "pic", label: "PIC" },
+    { id: "status", label: "Status" },
+    { id: "priority", label: "Priority" },
+    { id: "start", label: "Start Date" },
+    { id: "due", label: "Due Date" },
+    { id: "progress", label: "Progress" },
+  ];
+
   return (
     <div className="space-y-4">
-      {/* Filters */}
-      <div className="flex flex-wrap gap-2">
+      {/* Filters + Column toggle */}
+      <div className="flex flex-wrap items-center gap-2">
         <Select value={filterStatus} onValueChange={(v) => setFilterStatus(v ?? "all")}>
           <SelectTrigger className="h-8 w-36 text-xs">
             <SelectValue placeholder="Status" />
@@ -305,6 +447,33 @@ export function TaskListView({ tasks, statuses, members, onStatusChange }: TaskL
             <SelectItem value="none">— None</SelectItem>
           </SelectContent>
         </Select>
+
+        <div className="ml-auto">
+          <DropdownMenu>
+            <DropdownMenuTrigger className={cn(buttonVariants({ variant: "outline", size: "sm" }))}>
+              <Settings2 className="w-4 h-4 mr-1" />
+              Columns
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-48">
+              {colLabels.map((col) => (
+                <DropdownMenuCheckboxItem
+                  key={col.id}
+                  checked={visibleCols.has(col.id)}
+                  onCheckedChange={(c) => {
+                    setVisibleCols((prev) => {
+                      const next = new Set(prev);
+                      if (c) next.add(col.id);
+                      else next.delete(col.id);
+                      return next;
+                    });
+                  }}
+                >
+                  {col.label}
+                </DropdownMenuCheckboxItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
       </div>
 
       {/* Table */}
@@ -320,39 +489,45 @@ export function TaskListView({ tasks, statuses, members, onStatusChange }: TaskL
                   Name <SortIcon field="name" sortField={sortField} sortDir={sortDir} />
                 </span>
               </TableHead>
-              <TableHead>PIC</TableHead>
-              <TableHead
-                className="cursor-pointer select-none"
-                onClick={() => handleSort("status")}
-              >
-                <span className="flex items-center">
-                  Status <SortIcon field="status" sortField={sortField} sortDir={sortDir} />
-                </span>
-              </TableHead>
-              <TableHead
-                className="cursor-pointer select-none"
-                onClick={() => handleSort("priority")}
-              >
-                <span className="flex items-center">
-                  Priority <SortIcon field="priority" sortField={sortField} sortDir={sortDir} />
-                </span>
-              </TableHead>
-              <TableHead>Start</TableHead>
-              <TableHead
-                className="cursor-pointer select-none"
-                onClick={() => handleSort("target_end_date")}
-              >
-                <span className="flex items-center">
-                  Due <SortIcon field="target_end_date" sortField={sortField} sortDir={sortDir} />
-                </span>
-              </TableHead>
-              <TableHead>Progress</TableHead>
+              {visibleCols.has("pic") && <TableHead>PIC</TableHead>}
+              {visibleCols.has("status") && (
+                <TableHead
+                  className="cursor-pointer select-none"
+                  onClick={() => handleSort("status")}
+                >
+                  <span className="flex items-center">
+                    Status <SortIcon field="status" sortField={sortField} sortDir={sortDir} />
+                  </span>
+                </TableHead>
+              )}
+              {visibleCols.has("priority") && (
+                <TableHead
+                  className="cursor-pointer select-none"
+                  onClick={() => handleSort("priority")}
+                >
+                  <span className="flex items-center">
+                    Priority <SortIcon field="priority" sortField={sortField} sortDir={sortDir} />
+                  </span>
+                </TableHead>
+              )}
+              {visibleCols.has("start") && <TableHead>Start</TableHead>}
+              {visibleCols.has("due") && (
+                <TableHead
+                  className="cursor-pointer select-none"
+                  onClick={() => handleSort("target_end_date")}
+                >
+                  <span className="flex items-center">
+                    Due <SortIcon field="target_end_date" sortField={sortField} sortDir={sortDir} />
+                  </span>
+                </TableHead>
+              )}
+              {visibleCols.has("progress") && <TableHead>Progress</TableHead>}
             </TableRow>
           </TableHeader>
           <TableBody>
             {filtered.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
+                <TableCell colSpan={colCount} className="text-center text-muted-foreground py-8">
                   No tasks found.
                 </TableCell>
               </TableRow>
