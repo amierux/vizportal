@@ -85,11 +85,18 @@ export async function updateEmployee(_prevState: unknown, formData: FormData) {
   const rawData: Record<string, unknown> = {};
   formData.forEach((value, key) => {
     if (key.startsWith("_")) return;
-    if (value === "") rawData[key] = null;
-    else if (key === "weekly_required_hours" || key === "salary")
-      rawData[key] = Number(value);
-    else if (key === "break_enabled") rawData[key] = value === "on" || value === "true";
-    else rawData[key] = value;
+    if (key === "weekly_required_hours" || key === "employment_status") {
+      // NOT NULL columns — omit when empty so the existing value is kept
+      if (value !== "") rawData[key] = key === "weekly_required_hours" ? Number(value) : value;
+    } else if (key === "salary") {
+      rawData[key] = value === "" ? null : Number(value);
+    } else if (key === "break_enabled") {
+      rawData[key] = value === "on" || value === "true";
+    } else if (value === "") {
+      rawData[key] = null;
+    } else {
+      rawData[key] = value;
+    }
   });
   // Checkbox absent = unchecked
   if (!("break_enabled" in rawData)) rawData.break_enabled = false;
