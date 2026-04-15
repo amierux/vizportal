@@ -21,8 +21,16 @@ export function getWorkDate(timestamp: string): string {
 /**
  * Calculate total worked hours from paired clock entries for a given date.
  * Returns hours as a decimal (e.g., 8.5 for 8 hours 30 minutes).
+ *
+ * If a `break` config is provided (enabled + start/end time in "HH:MM" format),
+ * the break duration is deducted from the total — but only if the raw worked
+ * span covers the whole break window (i.e. the employee was clocked in across
+ * the break, implying they didn't manually clock out for lunch).
  */
-export function calculateTotalHours(entries: ClockEntry[]): number {
+export function calculateTotalHours(
+  entries: ClockEntry[],
+  breakConfig?: { enabled: boolean; startTime?: string | null; endTime?: string | null } | null
+): number {
   const sorted = [...entries].sort(
     (a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
   );
@@ -36,6 +44,49 @@ export function calculateTotalHours(entries: ClockEntry[]): number {
     } else if (entry.type === "clock_out" && clockInTime) {
       totalMs += new Date(entry.timestamp).getTime() - clockInTime.getTime();
       clockInTime = null;
+    }
+  }
+
+  // Deduct lunch/break window if enabled and fully covered by a work session.
+  if (
+    breakConfig?.enabled &&
+    breakConfig.startTime &&
+    breakConfig.endTime &&
+    sorted.length >= 2
+  ) {
+    const [bsH, bsM] = breakConfig.startTime.split(":").map(Number);
+    const [beH, beM] = breakConfig.endTime.split(":").map(Number);
+    const breakMinutes = (beH + beM / 60 - (bsH + bsM / 60)) * 60;
+
+    if (breakMinutes > 0) {
+      // Check whether any work session fully covers the break window.
+      let covered = false;
+      let openIn: Date | null = null;
+      for (const entry of sorted) {
+        if (entry.type === "clock_in") {
+          openIn = new Date(entry.timestamp);
+        } else if (entry.type === "clock_out" && openIn) {
+          const inDate = openIn;
+          const outDate = new Date(entry.timestamp);
+          const refSgt = new Date(inDate.toLocaleString("en-US", { timeZone: SGT_TIMEZONE }));
+          const breakStart = new Date(refSgt);
+          breakStart.setHours(bsH, bsM, 0, 0);
+          const breakEnd = new Date(refSgt);
+          breakEnd.setHours(beH, beM, 0, 0);
+          const inSgt = new Date(inDate.toLocaleString("en-US", { timeZone: SGT_TIMEZONE }));
+          const outSgt = new Date(outDate.toLocaleString("en-US", { timeZone: SGT_TIMEZONE }));
+          if (inSgt.getTime() <= breakStart.getTime() && outSgt.getTime() >= breakEnd.getTime()) {
+            covered = true;
+            break;
+          }
+          openIn = null;
+        }
+      }
+
+      if (covered) {
+        totalMs -= breakMinutes * 60 * 1000;
+        if (totalMs < 0) totalMs = 0;
+      }
     }
   }
 

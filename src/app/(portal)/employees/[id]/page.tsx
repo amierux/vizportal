@@ -153,6 +153,9 @@ export default async function EmployeeDetailPage({
               sss_number: details.sss_number,
               philhealth_number: details.philhealth_number,
               pagibig_number: details.pagibig_number,
+              break_enabled: details.break_enabled,
+              break_start_time: details.break_start_time,
+              break_end_time: details.break_end_time,
             }}
             firstName={employee.first_name}
             lastName={employee.last_name}

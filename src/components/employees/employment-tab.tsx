@@ -15,6 +15,7 @@ import {
 import { toast } from "sonner";
 import { EMPLOYMENT_STATUSES, SALARY_FREQUENCIES } from "@/lib/constants";
 import type { Department, JobLevel } from "@/types";
+import { useState } from "react";
 
 type EmploymentTabProps = {
   profileId: string;
@@ -32,6 +33,9 @@ type EmploymentTabProps = {
     sss_number: string | null;
     philhealth_number: string | null;
     pagibig_number: string | null;
+    break_enabled?: boolean | null;
+    break_start_time?: string | null;
+    break_end_time?: string | null;
   };
   firstName: string | null;
   lastName: string | null;
@@ -50,6 +54,7 @@ export function EmploymentTab({
   canEdit,
 }: EmploymentTabProps) {
   const [state, formAction, isPending] = useActionState(updateEmployee, null);
+  const [breakEnabled, setBreakEnabled] = useState<boolean>(!!data.break_enabled);
 
   useEffect(() => {
     if (state?.success) toast.success("Employment info updated");
@@ -156,6 +161,47 @@ export function EmploymentTab({
         ) : (
           <Input value={data.employment_status} readOnly className="bg-muted" />
         )}
+      </div>
+
+      <div className="border-t pt-4">
+        <h3 className="mb-4 text-lg font-medium">Lunch Break</h3>
+        <div className="space-y-3">
+          <label className="flex items-center gap-2 text-sm">
+            <input
+              type="checkbox"
+              name="break_enabled"
+              checked={breakEnabled}
+              disabled={!canEdit}
+              onChange={(e) => setBreakEnabled(e.target.checked)}
+              className="h-4 w-4 rounded border-gray-300"
+            />
+            Enable lunch break (deducted from total hours)
+          </label>
+          {breakEnabled && (
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label>Break Start</Label>
+                <Input
+                  name={canEdit ? "break_start_time" : undefined}
+                  type="time"
+                  defaultValue={data.break_start_time ?? "12:00"}
+                  readOnly={!canEdit}
+                  className={!canEdit ? "bg-muted" : ""}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Break End</Label>
+                <Input
+                  name={canEdit ? "break_end_time" : undefined}
+                  type="time"
+                  defaultValue={data.break_end_time ?? "13:00"}
+                  readOnly={!canEdit}
+                  className={!canEdit ? "bg-muted" : ""}
+                />
+              </div>
+            </div>
+          )}
+        </div>
       </div>
 
       <div className="border-t pt-4">

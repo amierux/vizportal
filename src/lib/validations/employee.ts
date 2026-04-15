@@ -46,6 +46,9 @@ export const employeeDetailSchema = z.object({
   date_hired: z.string().optional(),
   date_regularized: z.string().optional(),
   employment_status: z.enum(["probationary", "regular", "resigned", "terminated"]).optional(),
+  break_enabled: z.boolean().optional(),
+  break_start_time: z.string().optional(),
+  break_end_time: z.string().optional(),
 });
 
 export type EmployeeDetailInput = z.infer<typeof employeeDetailSchema>;

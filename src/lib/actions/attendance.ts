@@ -189,13 +189,32 @@ export async function recalculateDailySummary(
 
   if (!schedule) return; // No schedule — can't calculate
 
-  // Calculate required hours from schedule
+  // Get break-time config (optional lunch break)
+  const { data: empDetail } = await supabase
+    .from("employee_details")
+    .select("break_enabled, break_start_time, break_end_time")
+    .eq("profile_id", profileId)
+    .single();
+
+  // Calculate required hours from schedule, minus break window if enabled
   const [startH, startM] = schedule.start_time.split(":").map(Number);
   const [endH, endM] = schedule.end_time.split(":").map(Number);
-  const requiredHours = (endH + endM / 60) - (startH + startM / 60);
+  let requiredHours = (endH + endM / 60) - (startH + startM / 60);
+
+  let breakHours = 0;
+  if (empDetail?.break_enabled && empDetail.break_start_time && empDetail.break_end_time) {
+    const [bsH, bsM] = empDetail.break_start_time.split(":").map(Number);
+    const [beH, beM] = empDetail.break_end_time.split(":").map(Number);
+    breakHours = (beH + beM / 60) - (bsH + bsM / 60);
+    if (breakHours > 0) requiredHours -= breakHours;
+  }
 
   const clockEntries = entries ?? [];
-  const totalHours = calculateTotalHours(clockEntries);
+  const totalHours = calculateTotalHours(clockEntries, {
+    enabled: !!empDetail?.break_enabled,
+    startTime: empDetail?.break_start_time,
+    endTime: empDetail?.break_end_time,
+  });
 
   // Check lateness
   const clockIns = clockEntries.filter((e) => e.type === "clock_in");

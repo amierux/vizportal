@@ -85,16 +85,16 @@ export function AttendanceRecords({ userRoles, departments }: AttendanceRecordsP
   }, [activeScope]);
 
   function exportCsv() {
-    const headers = ["Employee", "Date", "Total Hours", "Status", "Late (min)", "Undertime (min)", "Overtime (min)"];
+    const headers = ["Employee", "Date", "Total Hours", "Status", "Late (hrs)", "Undertime (hrs)", "Overtime (hrs)"];
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const rows = records.map((r: any) => [
       `${r.profiles?.first_name ?? ""} ${r.profiles?.last_name ?? ""}`.trim(),
       r.date,
       r.total_hours,
       r.status,
-      r.late_minutes,
-      r.undertime_minutes,
-      r.overtime_minutes,
+      (r.late_minutes / 60).toFixed(2),
+      (r.undertime_minutes / 60).toFixed(2),
+      (r.overtime_minutes / 60).toFixed(2),
     ].join(","));
     const csv = [headers.join(","), ...rows].join("\n");
     const blob = new Blob([csv], { type: "text/csv" });
@@ -116,9 +116,9 @@ export function AttendanceRecords({ userRoles, departments }: AttendanceRecordsP
         <td>${r.date}</td>
         <td>${r.total_hours}h</td>
         <td>${r.status}</td>
-        <td>${r.late_minutes}m</td>
-        <td>${r.undertime_minutes}m</td>
-        <td>${r.overtime_minutes}m</td>
+        <td>${(r.late_minutes / 60).toFixed(2)}h</td>
+        <td>${(r.undertime_minutes / 60).toFixed(2)}h</td>
+        <td>${(r.overtime_minutes / 60).toFixed(2)}h</td>
       </tr>`
     ).join("");
 
@@ -219,9 +219,9 @@ export function AttendanceRecords({ userRoles, departments }: AttendanceRecordsP
                           {r.status?.replace("_", " ")}
                         </Badge>
                       </TableCell>
-                      <TableCell>{r.late_minutes > 0 ? `${r.late_minutes}m` : "—"}</TableCell>
-                      <TableCell>{r.undertime_minutes > 0 ? `${r.undertime_minutes}m` : "—"}</TableCell>
-                      <TableCell>{r.overtime_minutes > 0 ? `${r.overtime_minutes}m` : "—"}</TableCell>
+                      <TableCell>{r.late_minutes > 0 ? `${(r.late_minutes / 60).toFixed(2)}h` : "—"}</TableCell>
+                      <TableCell>{r.undertime_minutes > 0 ? `${(r.undertime_minutes / 60).toFixed(2)}h` : "—"}</TableCell>
+                      <TableCell>{r.overtime_minutes > 0 ? `${(r.overtime_minutes / 60).toFixed(2)}h` : "—"}</TableCell>
                       <TableCell>
                         <Button variant="ghost" size="icon" onClick={() => setViewing(r)}>
                           <Eye className="h-4 w-4" />
@@ -249,9 +249,9 @@ export function AttendanceRecords({ userRoles, departments }: AttendanceRecordsP
             <div><span className="text-muted-foreground">Date:</span> {formatDate(viewing.date)}</div>
             <div><span className="text-muted-foreground">Total Hours:</span> {viewing.total_hours}</div>
             <div><span className="text-muted-foreground">Status:</span> <Badge>{viewing.status?.replace("_", " ")}</Badge></div>
-            {viewing.is_late && <div><span className="text-muted-foreground">Late:</span> {viewing.late_minutes} minutes</div>}
-            {viewing.undertime_minutes > 0 && <div><span className="text-muted-foreground">Undertime:</span> {viewing.undertime_minutes} minutes</div>}
-            {viewing.overtime_minutes > 0 && <div><span className="text-muted-foreground">Overtime:</span> {viewing.overtime_minutes} minutes</div>}
+            {viewing.is_late && <div><span className="text-muted-foreground">Late:</span> {(viewing.late_minutes / 60).toFixed(2)} hours</div>}
+            {viewing.undertime_minutes > 0 && <div><span className="text-muted-foreground">Undertime:</span> {(viewing.undertime_minutes / 60).toFixed(2)} hours</div>}
+            {viewing.overtime_minutes > 0 && <div><span className="text-muted-foreground">Overtime:</span> {(viewing.overtime_minutes / 60).toFixed(2)} hours</div>}
             {viewing.has_missing_entry && <div className="text-destructive">&#9888; Missing entry detected</div>}
           </div>
         </RequestDetailDialog>

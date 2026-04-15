@@ -88,8 +88,11 @@ export async function updateEmployee(_prevState: unknown, formData: FormData) {
     if (value === "") rawData[key] = null;
     else if (key === "weekly_required_hours" || key === "salary")
       rawData[key] = Number(value);
+    else if (key === "break_enabled") rawData[key] = value === "on" || value === "true";
     else rawData[key] = value;
   });
+  // Checkbox absent = unchecked
+  if (!("break_enabled" in rawData)) rawData.break_enabled = false;
 
   const parsed = employeeDetailSchema.safeParse(rawData);
   if (!parsed.success) {
