@@ -11,7 +11,10 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Eye } from "lucide-react";
 import { RecordsFilterBar } from "@/components/shared/records-filter-bar";
+import { RequestDetailDialog } from "@/components/shared/request-detail-dialog";
 import { getLeaveRecords, type RecordScope } from "@/lib/actions/records";
 import { formatDate } from "@/lib/utils/format";
 import type { RoleName } from "@/types";
@@ -35,6 +38,8 @@ export function LeaveRecords({ userRoles, departments }: LeaveRecordsProps) {
   const [records, setRecords] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [activeScope, setActiveScope] = useState<RecordScope>("personal");
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [viewing, setViewing] = useState<any | null>(null);
 
   const isTeamLeader = userRoles.includes("team_leader");
   const isDeptManager = userRoles.includes("dept_manager");
@@ -168,6 +173,7 @@ export function LeaveRecords({ userRoles, departments }: LeaveRecordsProps) {
                     <TableHead>Days</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead>Filed</TableHead>
+                    <TableHead></TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -197,6 +203,11 @@ export function LeaveRecords({ userRoles, departments }: LeaveRecordsProps) {
                         </Badge>
                       </TableCell>
                       <TableCell>{formatDate(r.created_at)}</TableCell>
+                      <TableCell>
+                        <Button variant="ghost" size="icon" onClick={() => setViewing(r)}>
+                          <Eye className="h-4 w-4" />
+                        </Button>
+                      </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
@@ -205,6 +216,25 @@ export function LeaveRecords({ userRoles, departments }: LeaveRecordsProps) {
           </TabsContent>
         ))}
       </Tabs>
+
+      {viewing && (
+        <RequestDetailDialog
+          open={!!viewing}
+          onOpenChange={(o) => !o && setViewing(null)}
+          type="leave_request"
+          referenceId={viewing.id}
+          title={`Leave: ${viewing.leave_types?.name ?? ""}`}
+        >
+          <div className="text-sm space-y-1">
+            <div><span className="text-muted-foreground">Employee:</span> {viewing.profiles?.first_name} {viewing.profiles?.last_name}</div>
+            <div><span className="text-muted-foreground">Type:</span> {viewing.leave_types?.name} ({viewing.leave_types?.code})</div>
+            <div><span className="text-muted-foreground">Dates:</span> {formatDate(viewing.start_date)} — {formatDate(viewing.end_date)}</div>
+            <div><span className="text-muted-foreground">Days:</span> {viewing.total_days}</div>
+            <div><span className="text-muted-foreground">Status:</span> <Badge>{viewing.status}</Badge></div>
+            {viewing.reason && <div><span className="text-muted-foreground">Reason:</span> {viewing.reason}</div>}
+          </div>
+        </RequestDetailDialog>
+      )}
     </div>
   );
 }

@@ -21,7 +21,15 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { CheckCircle2, XCircle, Download } from "lucide-react";
+import { CheckCircle2, XCircle, Download, Eye, FileSpreadsheet, FileText } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { RequestDetailDialog } from "@/components/shared/request-detail-dialog";
+import { formatDate } from "@/lib/utils/format";
 
 type Department = { id: string; name: string };
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -79,6 +87,30 @@ function exportCSV(data: Submission[]) {
   URL.revokeObjectURL(url);
 }
 
+function exportPDF(data: Submission[]) {
+  const headers = ["Employee", "Department", "Week", "Hours", "Status"];
+  const rows = data.map((s) =>
+    `<tr>
+      <td>${s.profiles?.first_name ?? ""} ${s.profiles?.last_name ?? ""}</td>
+      <td>${s.profiles?.employee_details?.departments?.name ?? "—"}</td>
+      <td>${s.week_start_date} → ${s.week_end_date}</td>
+      <td>${((s.total_minutes ?? 0) / 60).toFixed(1)}h</td>
+      <td>${s.status}</td>
+    </tr>`
+  ).join("");
+  const html = `<html><head><title>Timesheets</title>
+    <style>body{font-family:sans-serif;padding:20px}table{width:100%;border-collapse:collapse}th,td{border:1px solid #ddd;padding:8px;text-align:left;font-size:12px}th{background:#f5f5f5}</style>
+    </head><body><h2>Timesheet Report</h2>
+    <table><thead><tr>${headers.map((h) => `<th>${h}</th>`).join("")}</tr></thead><tbody>${rows}</tbody></table>
+    </body></html>`;
+  const win = window.open("", "_blank");
+  if (win) {
+    win.document.write(html);
+    win.document.close();
+    win.print();
+  }
+}
+
 export function TimesheetAllMembers({ submissions, departments }: Props) {
   const [filterStatus, setFilterStatus] = useState("all");
   const [filterDept, setFilterDept] = useState("all");
@@ -90,6 +122,8 @@ export function TimesheetAllMembers({ submissions, departments }: Props) {
   } | null>(null);
   const [comment, setComment] = useState("");
   const [isPending, startTransition] = useTransition();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [viewing, setViewing] = useState<any | null>(null);
 
   const filtered = submissions.filter((s) => {
     if (filterStatus !== "all" && s.status !== filterStatus) return false;
@@ -158,10 +192,24 @@ export function TimesheetAllMembers({ submissions, departments }: Props) {
             </SelectContent>
           </Select>
         </div>
-        <Button variant="outline" size="sm" className="h-8" onClick={() => exportCSV(filtered)}>
-          <Download className="w-4 h-4 mr-1" />
-          Export CSV
-        </Button>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline" size="sm" className="h-8">
+              <Download className="w-4 h-4 mr-1" />
+              Export
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem onClick={() => exportCSV(filtered)}>
+              <FileSpreadsheet className="w-4 h-4 mr-2" />
+              Export as CSV
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => exportPDF(filtered)}>
+              <FileText className="w-4 h-4 mr-2" />
+              Export as PDF
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
 
       {/* Table */}
@@ -202,26 +250,36 @@ export function TimesheetAllMembers({ submissions, departments }: Props) {
                     <StatusBadge status={s.status} />
                   </td>
                   <td className="px-3 py-2 text-center">
-                    {s.status === "submitted" && (
-                      <div className="flex items-center justify-center gap-1">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-7 w-7 text-green-600 hover:text-green-700 hover:bg-green-50"
-                          onClick={() => handleAction("approve", s.id, name)}
-                        >
-                          <CheckCircle2 className="w-4 h-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-7 w-7 text-red-500 hover:text-red-600 hover:bg-red-50"
-                          onClick={() => handleAction("reject", s.id, name)}
-                        >
-                          <XCircle className="w-4 h-4" />
-                        </Button>
-                      </div>
-                    )}
+                    <div className="flex items-center justify-center gap-1">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7"
+                        onClick={() => setViewing(s)}
+                      >
+                        <Eye className="w-4 h-4" />
+                      </Button>
+                      {s.status === "submitted" && (
+                        <>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7 text-green-600 hover:text-green-700 hover:bg-green-50"
+                            onClick={() => handleAction("approve", s.id, name)}
+                          >
+                            <CheckCircle2 className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7 text-red-500 hover:text-red-600 hover:bg-red-50"
+                            onClick={() => handleAction("reject", s.id, name)}
+                          >
+                            <XCircle className="w-4 h-4" />
+                          </Button>
+                        </>
+                      )}
+                    </div>
                   </td>
                 </tr>
               );
@@ -229,6 +287,24 @@ export function TimesheetAllMembers({ submissions, departments }: Props) {
           </tbody>
         </table>
       </div>
+
+      {/* View detail dialog */}
+      {viewing && (
+        <RequestDetailDialog
+          open={!!viewing}
+          onOpenChange={(o) => !o && setViewing(null)}
+          title={`Timesheet: ${viewing.profiles?.first_name ?? ""} ${viewing.profiles?.last_name ?? ""}`.trim()}
+          showApproval={false}
+        >
+          <div className="text-sm space-y-1">
+            <div><span className="text-muted-foreground">Employee:</span> {viewing.profiles?.first_name} {viewing.profiles?.last_name}</div>
+            <div><span className="text-muted-foreground">Week:</span> {formatDate(viewing.week_start_date)} — {formatDate(viewing.week_end_date)}</div>
+            <div><span className="text-muted-foreground">Total Hours:</span> {((viewing.total_minutes ?? 0) / 60).toFixed(1)}h</div>
+            <div><span className="text-muted-foreground">Status:</span> <Badge>{viewing.status}</Badge></div>
+            {viewing.submitted_at && <div><span className="text-muted-foreground">Submitted:</span> {formatDate(viewing.submitted_at)}</div>}
+          </div>
+        </RequestDetailDialog>
+      )}
 
       {/* Approve/Reject dialog */}
       <Dialog open={!!actionDialog} onOpenChange={(open) => { if (!open) setActionDialog(null); }}>

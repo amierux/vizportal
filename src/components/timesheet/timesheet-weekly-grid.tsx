@@ -9,13 +9,19 @@ import { submitTimesheet } from "@/lib/actions/timesheet";
 import { searchMyTasks } from "@/lib/actions/workspace-time-entries";
 import { logTime } from "@/lib/actions/workspace-time-entries";
 import { updateTimeEntry } from "@/lib/actions/workspace-time-entries";
-import { Plus, Send } from "lucide-react";
+import { Plus, Send, Download, FileSpreadsheet, FileText } from "lucide-react";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 type Task = { id: string; name: string };
 type TimeEntry = {
@@ -147,21 +153,87 @@ export function TimesheetWeeklyGrid({ entries, submission, weekStartDate }: Prop
 
   const weekLabel = `${weekDates[0]} – ${weekDates[6]}`;
 
+  function exportCsv() {
+    const rows = [
+      ["Task", ...DAY_LABELS, "Total"],
+      ...Array.from(taskMap.values()).map(({ task, byDate }) => {
+        const cells = weekDates.map((d) => {
+          const entries = byDate.get(d) ?? [];
+          const total = entries.reduce((sum, e) => sum + e.duration_minutes, 0);
+          return total > 0 ? (total / 60).toFixed(1) : "";
+        });
+        const total = Array.from(byDate.values()).flat().reduce((s, e) => s + e.duration_minutes, 0);
+        return [task.name, ...cells, (total / 60).toFixed(1)];
+      }),
+    ];
+    const csv = rows.map((r) => r.map((c) => `"${c}"`).join(",")).join("\n");
+    const blob = new Blob([csv], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `timesheet-${weekStartDate}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  function exportPdf() {
+    const rows = Array.from(taskMap.values()).map(({ task, byDate }) => {
+      const cells = weekDates.map((d) => {
+        const entries = byDate.get(d) ?? [];
+        const total = entries.reduce((sum, e) => sum + e.duration_minutes, 0);
+        return total > 0 ? (total / 60).toFixed(1) + "h" : "—";
+      });
+      const total = Array.from(byDate.values()).flat().reduce((s, e) => s + e.duration_minutes, 0);
+      return `<tr><td>${task.name}</td>${cells.map((c) => `<td>${c}</td>`).join("")}<td><strong>${(total / 60).toFixed(1)}h</strong></td></tr>`;
+    }).join("");
+    const html = `<html><head><title>Timesheet ${weekStartDate}</title>
+      <style>body{font-family:sans-serif;padding:20px}table{width:100%;border-collapse:collapse}th,td{border:1px solid #ddd;padding:8px;text-align:left;font-size:12px}th{background:#f5f5f5}</style>
+      </head><body><h2>My Timesheet — ${weekLabel}</h2>
+      <table><thead><tr><th>Task</th>${DAY_LABELS.map((d) => `<th>${d}</th>`).join("")}<th>Total</th></tr></thead><tbody>${rows}</tbody></table>
+      </body></html>`;
+    const win = window.open("", "_blank");
+    if (win) {
+      win.document.write(html);
+      win.document.close();
+      win.print();
+    }
+  }
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <span className="text-sm text-muted-foreground font-medium">{weekLabel}</span>
-        {!isLocked && (
-          <Button size="sm" onClick={handleSubmitWeek} disabled={isPending}>
-            <Send className="w-4 h-4 mr-1" />
-            Submit Week
-          </Button>
-        )}
-        {isLocked && (
-          <Badge variant={submission?.status === "approved" ? "default" : "secondary"}>
-            {submission?.status === "approved" ? "Approved" : "Submitted"}
-          </Badge>
-        )}
+        <div className="flex items-center gap-2">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button size="sm" variant="outline">
+                <Download className="w-4 h-4 mr-1" />
+                Export
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={exportCsv}>
+                <FileSpreadsheet className="w-4 h-4 mr-2" />
+                Export as CSV
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={exportPdf}>
+                <FileText className="w-4 h-4 mr-2" />
+                Export as PDF
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+          {!isLocked && (
+            <Button size="sm" onClick={handleSubmitWeek} disabled={isPending}>
+              <Send className="w-4 h-4 mr-1" />
+              Submit Week
+            </Button>
+          )}
+          {isLocked && (
+            <Badge variant={submission?.status === "approved" ? "default" : "secondary"}>
+              {submission?.status === "approved" ? "Approved" : "Submitted"}
+            </Badge>
+          )}
+        </div>
       </div>
 
       <div className="overflow-x-auto rounded-lg border">

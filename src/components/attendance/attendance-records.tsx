@@ -11,8 +11,12 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Eye } from "lucide-react";
 import { RecordsFilterBar } from "@/components/shared/records-filter-bar";
+import { RequestDetailDialog } from "@/components/shared/request-detail-dialog";
 import { getAttendanceRecords, type RecordScope } from "@/lib/actions/records";
+import { getClockEntriesByDate } from "@/lib/actions/attendance";
 import { formatDate } from "@/lib/utils/format";
 import type { RoleName } from "@/types";
 
@@ -36,6 +40,8 @@ export function AttendanceRecords({ userRoles, departments }: AttendanceRecordsP
   const [records, setRecords] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [activeScope, setActiveScope] = useState<RecordScope>("personal");
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [viewing, setViewing] = useState<any | null>(null);
 
   const isTeamLeader = userRoles.includes("team_leader");
   const isDeptManager = userRoles.includes("dept_manager");
@@ -169,6 +175,7 @@ export function AttendanceRecords({ userRoles, departments }: AttendanceRecordsP
                     <TableHead>Late</TableHead>
                     <TableHead>Undertime</TableHead>
                     <TableHead>Overtime</TableHead>
+                    <TableHead></TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -195,6 +202,11 @@ export function AttendanceRecords({ userRoles, departments }: AttendanceRecordsP
                       <TableCell>{r.late_minutes > 0 ? `${r.late_minutes}m` : "—"}</TableCell>
                       <TableCell>{r.undertime_minutes > 0 ? `${r.undertime_minutes}m` : "—"}</TableCell>
                       <TableCell>{r.overtime_minutes > 0 ? `${r.overtime_minutes}m` : "—"}</TableCell>
+                      <TableCell>
+                        <Button variant="ghost" size="icon" onClick={() => setViewing(r)}>
+                          <Eye className="h-4 w-4" />
+                        </Button>
+                      </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
@@ -203,6 +215,105 @@ export function AttendanceRecords({ userRoles, departments }: AttendanceRecordsP
           </TabsContent>
         ))}
       </Tabs>
+
+      {viewing && (
+        <RequestDetailDialog
+          open={!!viewing}
+          onOpenChange={(o) => !o && setViewing(null)}
+          title={`Attendance: ${formatDate(viewing.date)}`}
+          showApproval={false}
+        >
+          <AttendanceDetailContent viewing={viewing} />
+          <div className="text-sm space-y-1">
+            <div><span className="text-muted-foreground">Employee:</span> {viewing.profiles?.first_name} {viewing.profiles?.last_name}</div>
+            <div><span className="text-muted-foreground">Date:</span> {formatDate(viewing.date)}</div>
+            <div><span className="text-muted-foreground">Total Hours:</span> {viewing.total_hours}</div>
+            <div><span className="text-muted-foreground">Status:</span> <Badge>{viewing.status?.replace("_", " ")}</Badge></div>
+            {viewing.is_late && <div><span className="text-muted-foreground">Late:</span> {viewing.late_minutes} minutes</div>}
+            {viewing.undertime_minutes > 0 && <div><span className="text-muted-foreground">Undertime:</span> {viewing.undertime_minutes} minutes</div>}
+            {viewing.overtime_minutes > 0 && <div><span className="text-muted-foreground">Overtime:</span> {viewing.overtime_minutes} minutes</div>}
+            {viewing.has_missing_entry && <div className="text-destructive">&#9888; Missing entry detected</div>}
+          </div>
+        </RequestDetailDialog>
+      )}
+    </div>
+  );
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function AttendanceDetailContent({ viewing }: { viewing: any }) {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [entries, setEntries] = useState<any[]>([]);
+  const [loaded, setLoaded] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    setLoaded(false);
+    getClockEntriesByDate(viewing.profile_id ?? viewing.profiles?.id, viewing.date).then((data) => {
+      if (!cancelled) {
+        setEntries(data);
+        setLoaded(true);
+      }
+    });
+    return () => { cancelled = true; };
+  }, [viewing]);
+
+  if (!loaded) {
+    return <div className="text-sm text-muted-foreground">Loading clock entries...</div>;
+  }
+
+  if (entries.length === 0) {
+    return null;
+  }
+
+  return (
+    <div className="rounded-md border bg-muted/30 p-3 space-y-2">
+      <div className="text-sm font-medium">Clock Entries ({entries.length})</div>
+      <div className="space-y-1">
+        {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+        {entries.map((e: any) => {
+          const time = new Date(e.timestamp).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" });
+          const typeLabel = e.type === "clock_in" ? "Clock In" : "Clock Out";
+          const variant = e.type === "clock_in" ? "default" : "secondary";
+          return (
+            <div key={e.id} className="flex items-center gap-2 text-sm">
+              <Badge variant={variant} className="text-xs">{typeLabel}</Badge>
+              <span className="font-mono">{time}</span>
+              {e.is_manual && <Badge variant="outline" className="text-xs">Manual</Badge>}
+              {e.latitude != null && e.longitude != null && (
+                <a
+                  href={`https://www.google.com/maps?q=${e.latitude},${e.longitude}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-xs text-blue-600 hover:underline"
+                >
+                  📍 GPS
+                </a>
+              )}
+              {e.selfie_url && (
+                <a
+                  href={e.selfie_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-xs text-blue-600 hover:underline"
+                >
+                  📷 Selfie
+                </a>
+              )}
+              {e.attachment_url && (
+                <a
+                  href={e.attachment_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-xs text-blue-600 hover:underline"
+                >
+                  📎 File
+                </a>
+              )}
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }

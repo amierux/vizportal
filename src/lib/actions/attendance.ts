@@ -13,6 +13,20 @@ import {
 import { SGT_TIMEZONE } from "@/lib/constants";
 
 /**
+ * Get all clock entries for a specific profile + date (in/out events).
+ */
+export async function getClockEntriesByDate(profileId: string, date: string) {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("clock_entries")
+    .select("id, type, timestamp, selfie_url, latitude, longitude, is_manual, manual_remarks, attachment_url")
+    .eq("profile_id", profileId)
+    .eq("date", date)
+    .order("timestamp", { ascending: true });
+  return data ?? [];
+}
+
+/**
  * Clock in or out. Called from the clock button component.
  */
 export async function clockAction(params: {

@@ -74,6 +74,7 @@ export async function createFolder(_prevState: unknown, formData: FormData) {
   await supabase.from("workspace_folder_statuses").insert(statusInserts);
 
   revalidatePath("/workspace/folders");
+  revalidatePath("/workspace");
   return { success: true, folderId: folder.id };
 }
 

@@ -38,9 +38,11 @@ type ApprovalDetail = {
 type RequestDetailDialogProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  type: "leave_request" | "overtime" | "manual_clock";
-  referenceId: string;
+  type?: "leave_request" | "overtime" | "manual_clock";
+  referenceId?: string;
   title: string;
+  /** When false, skips the approval fetch and hides the approval section entirely. Defaults to true. */
+  showApproval?: boolean;
   /** Renders custom content above the approval timeline (e.g. request fields). */
   children?: React.ReactNode;
 };
@@ -58,6 +60,7 @@ export function RequestDetailDialog({
   type,
   referenceId,
   title,
+  showApproval = true,
   children,
 }: RequestDetailDialogProps) {
   const [detail, setDetail] = useState<ApprovalDetail | null>(null);
@@ -65,12 +68,12 @@ export function RequestDetailDialog({
   const [following, setFollowing] = useState(false);
 
   useEffect(() => {
-    if (!open) return;
+    if (!open || !showApproval || !type || !referenceId) return;
     let cancelled = false;
     async function load() {
       setLoading(true);
       try {
-        const d = await getRequestApprovalDetail(type, referenceId);
+        const d = await getRequestApprovalDetail(type!, referenceId!);
         if (!cancelled) setDetail(d as ApprovalDetail | null);
       } finally {
         if (!cancelled) setLoading(false);
@@ -78,9 +81,10 @@ export function RequestDetailDialog({
     }
     void load();
     return () => { cancelled = true; };
-  }, [open, type, referenceId]);
+  }, [open, showApproval, type, referenceId]);
 
   async function handleFollowUp() {
+    if (!type || !referenceId) return;
     setFollowing(true);
     const result = await followUpApproval(type, referenceId);
     if ("error" in result) toast.error(result.error);
@@ -98,11 +102,11 @@ export function RequestDetailDialog({
         {children && (
           <>
             <div className="space-y-2">{children}</div>
-            <Separator />
+            {showApproval && <Separator />}
           </>
         )}
 
-        <div className="space-y-3">
+        {showApproval && <div className="space-y-3">
           <div className="flex items-center justify-between">
             <h3 className="text-sm font-semibold">Approval Status</h3>
             {detail && detail.status === "pending" && (
@@ -178,7 +182,7 @@ export function RequestDetailDialog({
               </ol>
             </>
           )}
-        </div>
+        </div>}
       </DialogContent>
     </Dialog>
   );

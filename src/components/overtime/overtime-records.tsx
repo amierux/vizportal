@@ -11,7 +11,10 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Eye } from "lucide-react";
 import { RecordsFilterBar } from "@/components/shared/records-filter-bar";
+import { RequestDetailDialog } from "@/components/shared/request-detail-dialog";
 import { getOvertimeRecords } from "@/lib/actions/overtime";
 import { formatDate } from "@/lib/utils/format";
 import type { RoleName } from "@/types";
@@ -37,6 +40,8 @@ export function OvertimeRecords({ userRoles, departments }: OvertimeRecordsProps
   const [records, setRecords] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [activeScope, setActiveScope] = useState<RecordScope>("personal");
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [viewing, setViewing] = useState<any | null>(null);
 
   const isTeamLeader = userRoles.includes("team_leader");
   const isDeptManager = userRoles.includes("dept_manager");
@@ -171,6 +176,7 @@ export function OvertimeRecords({ userRoles, departments }: OvertimeRecordsProps
                     <TableHead>Hours</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead>Reason</TableHead>
+                    <TableHead></TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -197,6 +203,11 @@ export function OvertimeRecords({ userRoles, departments }: OvertimeRecordsProps
                         </Badge>
                       </TableCell>
                       <TableCell className="max-w-[160px] truncate">{r.reason ?? "—"}</TableCell>
+                      <TableCell>
+                        <Button variant="ghost" size="icon" onClick={() => setViewing(r)}>
+                          <Eye className="h-4 w-4" />
+                        </Button>
+                      </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
@@ -205,6 +216,25 @@ export function OvertimeRecords({ userRoles, departments }: OvertimeRecordsProps
           </TabsContent>
         ))}
       </Tabs>
+
+      {viewing && (
+        <RequestDetailDialog
+          open={!!viewing}
+          onOpenChange={(o) => !o && setViewing(null)}
+          type="overtime"
+          referenceId={viewing.id}
+          title={`Overtime: ${formatDate(viewing.date)}`}
+        >
+          <div className="text-sm space-y-1">
+            <div><span className="text-muted-foreground">Employee:</span> {viewing.profiles?.first_name} {viewing.profiles?.last_name}</div>
+            <div><span className="text-muted-foreground">Date:</span> {formatDate(viewing.date)}</div>
+            <div><span className="text-muted-foreground">Time:</span> {viewing.start_time} — {viewing.end_time}</div>
+            <div><span className="text-muted-foreground">Total Hours:</span> {viewing.total_hours}h</div>
+            <div><span className="text-muted-foreground">Status:</span> <Badge>{viewing.status}</Badge></div>
+            {viewing.reason && <div><span className="text-muted-foreground">Reason:</span> {viewing.reason}</div>}
+          </div>
+        </RequestDetailDialog>
+      )}
     </div>
   );
 }
