@@ -69,13 +69,19 @@ export default async function DashboardPage() {
     widgets = await getMyWidgets();
   }
 
-  // Fetch data for all widgets in parallel
+  // Fetch data for all widgets in parallel — resilient to individual failures
   const uniqueTypes = Array.from(new Set(widgets.map((w) => w.widget_type)));
   const dataEntries = await Promise.all(
     uniqueTypes.map(async (type) => {
       const fetcher = WIDGET_FETCHERS[type];
-      const data = fetcher ? await fetcher() : null;
-      return [type, data] as const;
+      if (!fetcher) return [type, null] as const;
+      try {
+        const data = await fetcher();
+        return [type, data] as const;
+      } catch (err) {
+        console.error(`Widget fetcher failed: ${type}`, err);
+        return [type, null] as const;
+      }
     }),
   );
   const widgetData = Object.fromEntries(dataEntries);
