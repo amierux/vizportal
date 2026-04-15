@@ -28,6 +28,8 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { buttonVariants } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import { RequestDetailDialog } from "@/components/shared/request-detail-dialog";
 import { formatDate } from "@/lib/utils/format";
 
@@ -193,11 +195,9 @@ export function TimesheetAllMembers({ submissions, departments }: Props) {
           </Select>
         </div>
         <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="outline" size="sm" className="h-8">
-              <Download className="w-4 h-4 mr-1" />
-              Export
-            </Button>
+          <DropdownMenuTrigger className={cn(buttonVariants({ variant: "outline", size: "sm" }), "h-8")}>
+            <Download className="w-4 h-4 mr-1" />
+            Export
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
             <DropdownMenuItem onClick={() => exportCSV(filtered)}>

@@ -22,6 +22,8 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { buttonVariants } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 type Task = { id: string; name: string };
 type TimeEntry = {
@@ -205,11 +207,9 @@ export function TimesheetWeeklyGrid({ entries, submission, weekStartDate }: Prop
         <span className="text-sm text-muted-foreground font-medium">{weekLabel}</span>
         <div className="flex items-center gap-2">
           <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button size="sm" variant="outline">
-                <Download className="w-4 h-4 mr-1" />
-                Export
-              </Button>
+            <DropdownMenuTrigger className={cn(buttonVariants({ variant: "outline", size: "sm" }))}>
+              <Download className="w-4 h-4 mr-1" />
+              Export
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
               <DropdownMenuItem onClick={exportCsv}>
