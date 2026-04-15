@@ -12,9 +12,10 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Eye } from "lucide-react";
+import { Eye, Plus } from "lucide-react";
 import { RecordsFilterBar } from "@/components/shared/records-filter-bar";
 import { RequestDetailDialog } from "@/components/shared/request-detail-dialog";
+import { ManualClockDialog } from "@/components/attendance/manual-clock-dialog";
 import { getAttendanceRecords, type RecordScope } from "@/lib/actions/records";
 import { getClockEntriesByDate } from "@/lib/actions/attendance";
 import { formatDate } from "@/lib/utils/format";
@@ -42,6 +43,7 @@ export function AttendanceRecords({ userRoles, departments }: AttendanceRecordsP
   const [activeScope, setActiveScope] = useState<RecordScope>("personal");
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [viewing, setViewing] = useState<any | null>(null);
+  const [manualEntry, setManualEntry] = useState<{ date: string; type: "clock_in" | "clock_out" } | null>(null);
 
   const isTeamLeader = userRoles.includes("team_leader");
   const isDeptManager = userRoles.includes("dept_manager");
@@ -170,6 +172,8 @@ export function AttendanceRecords({ userRoles, departments }: AttendanceRecordsP
                     {showNameColumn && <TableHead>Employee</TableHead>}
                     {showNameColumn && <TableHead>Department</TableHead>}
                     <TableHead>Date</TableHead>
+                    <TableHead>In</TableHead>
+                    <TableHead>Out</TableHead>
                     <TableHead>Hours</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead>Late</TableHead>
@@ -193,6 +197,22 @@ export function AttendanceRecords({ userRoles, departments }: AttendanceRecordsP
                         </TableCell>
                       )}
                       <TableCell>{formatDate(r.date)}</TableCell>
+                      <TableCell>
+                        <ClockTimesCell
+                          entries={r.clock_entries ?? []}
+                          type="clock_in"
+                          date={r.date}
+                          onManual={() => setManualEntry({ date: r.date, type: "clock_in" })}
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <ClockTimesCell
+                          entries={r.clock_entries ?? []}
+                          type="clock_out"
+                          date={r.date}
+                          onManual={() => setManualEntry({ date: r.date, type: "clock_out" })}
+                        />
+                      </TableCell>
                       <TableCell>{r.total_hours}h</TableCell>
                       <TableCell>
                         <Badge variant={STATUS_VARIANTS[r.status] ?? "outline"}>
@@ -236,6 +256,59 @@ export function AttendanceRecords({ userRoles, departments }: AttendanceRecordsP
           </div>
         </RequestDetailDialog>
       )}
+
+      {manualEntry && (
+        <ManualClockDialog
+          open={!!manualEntry}
+          onOpenChange={(o) => !o && setManualEntry(null)}
+          defaultDate={manualEntry.date}
+          defaultType={manualEntry.type}
+          hideTrigger
+        />
+      )}
+    </div>
+  );
+}
+
+function ClockTimesCell({
+  entries,
+  type,
+  onManual,
+}: {
+  entries: Array<{ id: string; type: string; timestamp: string; is_manual?: boolean }>;
+  type: "clock_in" | "clock_out";
+  date: string;
+  onManual: () => void;
+}) {
+  const filtered = entries.filter((e) => e.type === type);
+
+  if (filtered.length === 0) {
+    return (
+      <button
+        type="button"
+        onClick={onManual}
+        className="inline-flex items-center gap-1 text-xs text-blue-600 hover:underline"
+      >
+        <Plus className="h-3 w-3" />
+        Manual Entry
+      </button>
+    );
+  }
+
+  return (
+    <div className="space-y-0.5">
+      {filtered.map((e) => {
+        const time = new Date(e.timestamp).toLocaleTimeString("en-US", {
+          hour: "2-digit",
+          minute: "2-digit",
+        });
+        return (
+          <div key={e.id} className="font-mono text-xs">
+            {time}
+            {e.is_manual && <span className="ml-1 text-muted-foreground">(M)</span>}
+          </div>
+        );
+      })}
     </div>
   );
 }

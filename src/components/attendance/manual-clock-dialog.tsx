@@ -25,9 +25,30 @@ import {
 import { toast } from "sonner";
 import { FileEdit } from "lucide-react";
 
-export function ManualClockDialog() {
+type Props = {
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+  defaultDate?: string;
+  defaultType?: "clock_in" | "clock_out";
+  hideTrigger?: boolean;
+};
+
+export function ManualClockDialog({
+  open: controlledOpen,
+  onOpenChange,
+  defaultDate,
+  defaultType,
+  hideTrigger = false,
+}: Props = {}) {
   const [state, formAction, isPending] = useActionState(submitManualClock, null);
-  const [open, setOpen] = useState(false);
+  const [internalOpen, setInternalOpen] = useState(false);
+
+  const isControlled = controlledOpen !== undefined;
+  const open = isControlled ? controlledOpen : internalOpen;
+  const setOpen = (v: boolean) => {
+    if (!isControlled) setInternalOpen(v);
+    onOpenChange?.(v);
+  };
 
   useEffect(() => {
     if (state && "success" in state) {
@@ -36,14 +57,17 @@ export function ManualClockDialog() {
       setOpen(false);
     }
     if (state && "error" in state) toast.error(state.error);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state]);
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger className={cn(buttonVariants({ variant: "outline", size: "sm" }))}>
-        <FileEdit className="mr-2 h-4 w-4" />
-        File Manual Entry
-      </DialogTrigger>
+      {!hideTrigger && (
+        <DialogTrigger className={cn(buttonVariants({ variant: "outline", size: "sm" }))}>
+          <FileEdit className="mr-2 h-4 w-4" />
+          File Manual Entry
+        </DialogTrigger>
+      )}
       <DialogContent>
         <DialogHeader>
           <DialogTitle>File Manual Clock Entry</DialogTitle>
@@ -51,12 +75,12 @@ export function ManualClockDialog() {
         <form action={formAction} className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="date">Date</Label>
-            <Input id="date" name="date" type="date" required />
+            <Input id="date" name="date" type="date" defaultValue={defaultDate} required />
           </div>
 
           <div className="space-y-2">
             <Label htmlFor="type">Type</Label>
-            <Select name="type" required>
+            <Select name="type" defaultValue={defaultType} required>
               <SelectTrigger>
                 <SelectValue placeholder="Select type" />
               </SelectTrigger>

@@ -84,6 +84,35 @@ export async function getAttendanceRecords(filters: {
     });
   }
 
+  // Attach clock entries per row in a single batched query
+  if (results.length > 0) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const profileIds = Array.from(new Set(results.map((r: any) => r.profile_id))).filter(Boolean);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const dates = Array.from(new Set(results.map((r: any) => r.date))).filter(Boolean);
+
+    if (profileIds.length && dates.length) {
+      const { data: entries } = await supabase
+        .from("clock_entries")
+        .select("id, profile_id, date, type, timestamp, is_manual")
+        .in("profile_id", profileIds as string[])
+        .in("date", dates as string[])
+        .order("timestamp", { ascending: true });
+
+      const byKey = new Map<string, typeof entries>();
+      for (const e of entries ?? []) {
+        const k = `${e.profile_id}|${e.date}`;
+        if (!byKey.has(k)) byKey.set(k, []);
+        byKey.get(k)!.push(e);
+      }
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      results = results.map((r: any) => ({
+        ...r,
+        clock_entries: byKey.get(`${r.profile_id}|${r.date}`) ?? [],
+      }));
+    }
+  }
+
   return results;
 }
 
