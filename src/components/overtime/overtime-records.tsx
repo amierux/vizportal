@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Table,
@@ -66,8 +66,16 @@ export function OvertimeRecords({ userRoles, departments }: OvertimeRecordsProps
 
   function handleTabChange(scope: string) {
     setActiveScope(scope as RecordScope);
-    setRecords([]);
   }
+
+  // Auto-load current-month data on mount and on tab change
+  useEffect(() => {
+    const now = new Date();
+    const start = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split("T")[0];
+    const end = now.toISOString().split("T")[0];
+    fetchRecords(activeScope, { startDate: start, endDate: end, search: "", departmentId: "" });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeScope]);
 
   function exportCsv() {
     const headers = ["Employee", "Department", "Date", "Start", "End", "Hours", "Status", "Reason", "Filed On"];
@@ -149,7 +157,7 @@ export function OvertimeRecords({ userRoles, departments }: OvertimeRecordsProps
               <p className="py-8 text-center text-muted-foreground">Loading...</p>
             ) : records.length === 0 ? (
               <p className="py-8 text-center text-muted-foreground">
-                No records found. Use the filters above and click Filter.
+                No records found in this date range.
               </p>
             ) : (
               <Table>
