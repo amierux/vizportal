@@ -109,6 +109,7 @@ const DEFAULT_WIDGETS: Record<
     { type: "my_tasks_summary", size: "small" },
     { type: "timesheet_week", size: "small" },
     { type: "pending_forms", size: "small" },
+    { type: "out_of_office", size: "medium" },
   ],
   tldm: [
     { type: "team_task_progress", size: "medium" },
@@ -927,4 +928,70 @@ export async function fetchDepartmentComparison(): Promise<
           ? Math.round((d.tasksCompleted / d.tasksTotal) * 100)
           : 0,
     }));
+}
+
+/**
+ * 20. Out of Office — members currently on approved leave + upcoming
+ *     non-working days (holidays) for the company. Visible to all members.
+ */
+export async function fetchOutOfOffice(): Promise<{
+  onLeave: Array<{
+    name: string;
+    leaveType: string;
+    startDate: string;
+    endDate: string;
+    halfDayPeriod: "am" | "pm" | null;
+  }>;
+  holidays: Array<{ name: string; date: string }>;
+}> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { onLeave: [], holidays: [] };
+
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("company_id")
+    .eq("id", user.id)
+    .single();
+  const companyId = profile?.company_id ?? "";
+
+  const today = new Date().toISOString().split("T")[0];
+  const in60 = new Date();
+  in60.setDate(in60.getDate() + 60);
+  const horizon = in60.toISOString().split("T")[0];
+
+  // Currently on leave: approved leaves spanning today
+  const { data: leaves } = await supabase
+    .from("leave_requests")
+    .select(
+      "start_date, end_date, half_day_period, profiles(first_name, last_name), leave_types(name)",
+    )
+    .eq("company_id", companyId)
+    .eq("status", "approved")
+    .lte("start_date", today)
+    .gte("end_date", today)
+    .order("end_date");
+
+  // Upcoming holidays within the next 60 days
+  const { data: holidays } = await supabase
+    .from("non_working_days")
+    .select("name, date")
+    .eq("company_id", companyId)
+    .gte("date", today)
+    .lte("date", horizon)
+    .order("date")
+    .limit(10);
+
+  return {
+    onLeave: (leaves ?? []).map((row: any) => ({
+      name: `${row.profiles?.first_name ?? ""} ${row.profiles?.last_name ?? ""}`.trim(),
+      leaveType: row.leave_types?.name ?? "",
+      startDate: row.start_date,
+      endDate: row.end_date,
+      halfDayPeriod: row.half_day_period ?? null,
+    })),
+    holidays: (holidays ?? []).map((h: any) => ({ name: h.name, date: h.date })),
+  };
 }

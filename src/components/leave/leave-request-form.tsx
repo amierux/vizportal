@@ -39,6 +39,8 @@ export function LeaveRequestForm({ leaveTypes, users }: LeaveRequestFormProps) {
   const [open, setOpen] = useState(false);
   const [selectedTypeId, setSelectedTypeId] = useState<string>("");
   const [relieverCount, setRelieverCount] = useState(1);
+  const [duration, setDuration] = useState<"full" | "am" | "pm">("full");
+  const [startDate, setStartDate] = useState<string>("");
 
   useEffect(() => {
     if (state && "success" in state) {
@@ -47,6 +49,8 @@ export function LeaveRequestForm({ leaveTypes, users }: LeaveRequestFormProps) {
       setOpen(false);
       setSelectedTypeId("");
       setRelieverCount(1);
+      setDuration("full");
+      setStartDate("");
     }
     if (state && "error" in state) toast.error(state.error);
   }, [state]);
@@ -90,16 +94,63 @@ export function LeaveRequestForm({ leaveTypes, users }: LeaveRequestFormProps) {
             </Select>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label>Start Date</Label>
-              <Input name="start_date" type="date" required />
-            </div>
-            <div className="space-y-2">
-              <Label>End Date</Label>
-              <Input name="end_date" type="date" required />
-            </div>
+          <div className="space-y-2">
+            <Label>Duration</Label>
+            <Select
+              name="half_day_period_ui"
+              value={duration}
+              onValueChange={(v) => setDuration((v ?? "full") as "full" | "am" | "pm")}
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="full">Full Day</SelectItem>
+                <SelectItem value="am">Half Day — Morning (AM)</SelectItem>
+                <SelectItem value="pm">Half Day — Afternoon (PM)</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
+
+          {/* Hidden input submits the actual value to the server */}
+          {duration !== "full" && (
+            <input type="hidden" name="half_day_period" value={duration} />
+          )}
+
+          {duration === "full" ? (
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Start Date</Label>
+                <Input
+                  name="start_date"
+                  type="date"
+                  value={startDate}
+                  onChange={(e) => setStartDate(e.target.value)}
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>End Date</Label>
+                <Input name="end_date" type="date" required />
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              <Label>Date</Label>
+              <Input
+                name="start_date"
+                type="date"
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+                required
+              />
+              {/* End date mirrors start for half-day */}
+              <input type="hidden" name="end_date" value={startDate} />
+              <p className="text-xs text-muted-foreground">
+                0.5 day will be deducted from your balance.
+              </p>
+            </div>
+          )}
 
           <div className="space-y-2">
             <Label>Reason (optional)</Label>

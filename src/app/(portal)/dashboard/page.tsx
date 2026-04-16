@@ -21,6 +21,7 @@ import {
   fetchAttendanceTrend,
   fetchPayrollCostTrend,
   fetchDepartmentComparison,
+  fetchOutOfOffice,
 } from "@/lib/actions/dashboard";
 import { DashboardGrid } from "@/components/dashboard/dashboard-grid";
 import type { RoleName } from "@/types";
@@ -45,6 +46,7 @@ const WIDGET_FETCHERS: Record<string, () => Promise<unknown>> = {
   attendance_trend: fetchAttendanceTrend,
   payroll_cost_trend: fetchPayrollCostTrend,
   department_comparison: fetchDepartmentComparison,
+  out_of_office: fetchOutOfOffice,
 };
 
 export default async function DashboardPage() {

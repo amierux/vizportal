@@ -554,6 +554,7 @@ export type Database = {
           start_date: string;
           end_date: string;
           total_days: number;
+          half_day_period: "am" | "pm" | null;
           reason: string | null;
           attachment_url: string | null;
           status: "pending" | "approved" | "rejected" | "cancelled";
@@ -568,6 +569,7 @@ export type Database = {
           start_date: string;
           end_date: string;
           total_days: number;
+          half_day_period?: "am" | "pm" | null;
           reason?: string | null;
           attachment_url?: string | null;
           status?: "pending" | "approved" | "rejected" | "cancelled";
@@ -576,6 +578,7 @@ export type Database = {
           status?: "pending" | "approved" | "rejected" | "cancelled";
           reason?: string | null;
           attachment_url?: string | null;
+          half_day_period?: "am" | "pm" | null;
         };
         Relationships: [];
       };

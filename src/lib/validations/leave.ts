@@ -26,6 +26,7 @@ export const leaveRequestSchema = z.object({
   start_date: z.string().min(1, "Start date is required"),
   end_date: z.string().min(1, "End date is required"),
   reason: z.string().optional(),
+  half_day_period: z.enum(["am", "pm"]).optional(),
 });
 
 export type LeaveRequestInput = z.infer<typeof leaveRequestSchema>;

@@ -17,15 +17,23 @@ export async function fileLeaveRequest(_prevState: unknown, formData: FormData) 
   } = await supabase.auth.getUser();
   if (!user) return { error: "Not authenticated" };
 
+  const halfDayRaw = formData.get("half_day_period") as string | null;
   const rawData = {
     leave_type_id: formData.get("leave_type_id") as string,
     start_date: formData.get("start_date") as string,
     end_date: formData.get("end_date") as string,
     reason: (formData.get("reason") as string) || undefined,
+    half_day_period:
+      halfDayRaw === "am" || halfDayRaw === "pm" ? halfDayRaw : undefined,
   };
 
   const parsed = leaveRequestSchema.safeParse(rawData);
   if (!parsed.success) return { error: parsed.error.issues[0].message };
+
+  // Half-day must be a single date
+  if (parsed.data.half_day_period && parsed.data.start_date !== parsed.data.end_date) {
+    return { error: "Half-day leave must be on a single date" };
+  }
 
   const { data: profile } = await supabase
     .from("profiles")
@@ -43,9 +51,12 @@ export async function fileLeaveRequest(_prevState: unknown, formData: FormData) 
     .single();
 
   const workDays = schedule?.work_days ?? ["mon", "tue", "wed", "thu", "fri"];
-  const totalDays = countWorkDays(parsed.data.start_date, parsed.data.end_date, workDays);
+  let totalDays = countWorkDays(parsed.data.start_date, parsed.data.end_date, workDays);
 
   if (totalDays === 0) return { error: "No work days in selected range" };
+
+  // Half-day collapses to 0.5 day regardless of range length (already enforced single date above)
+  if (parsed.data.half_day_period) totalDays = 0.5;
 
   // Check leave type validity
   const { data: leaveType } = await supabase
@@ -132,6 +143,7 @@ export async function fileLeaveRequest(_prevState: unknown, formData: FormData) 
       start_date: parsed.data.start_date,
       end_date: parsed.data.end_date,
       total_days: totalDays,
+      half_day_period: parsed.data.half_day_period ?? null,
       reason: parsed.data.reason ?? null,
       attachment_url: attachmentUrl,
     })

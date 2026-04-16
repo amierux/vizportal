@@ -40,6 +40,7 @@ export const WIDGET_TYPES: WidgetTypeDef[] = [
   { type: "attendance_trend", label: "Attendance Trend", size: "large" },
   { type: "payroll_cost_trend", label: "Payroll Cost Trend", size: "large" },
   { type: "department_comparison", label: "Department Comparison", size: "large" },
+  { type: "out_of_office", label: "Out of Office (Leaves + Holidays)", size: "medium" },
 ];
 
 type Props = {

@@ -24,6 +24,7 @@ import { HeadcountDepartmentWidget } from "./widgets/headcount-department";
 import { AttendanceTrendWidget } from "./widgets/attendance-trend";
 import { PayrollCostTrendWidget } from "./widgets/payroll-cost-trend";
 import { DepartmentComparisonWidget } from "./widgets/department-comparison";
+import { OutOfOfficeWidget } from "./widgets/out-of-office";
 
 type WidgetSize = "small" | "medium" | "large";
 
@@ -87,6 +88,8 @@ function renderWidget(type: string, data: any) {
       return <PayrollCostTrendWidget data={data} />;
     case "department_comparison":
       return <DepartmentComparisonWidget data={data} />;
+    case "out_of_office":
+      return <OutOfOfficeWidget data={data} />;
     default:
       return <div className="text-sm text-muted-foreground p-4">Unknown widget type.</div>;
   }
