@@ -17,23 +17,20 @@ export async function fileLeaveRequest(_prevState: unknown, formData: FormData) 
   } = await supabase.auth.getUser();
   if (!user) return { error: "Not authenticated" };
 
-  const halfDayRaw = formData.get("half_day_period") as string | null;
+  const startHalfRaw = formData.get("start_half") as string | null;
+  const endHalfRaw = formData.get("end_half") as string | null;
   const rawData = {
     leave_type_id: formData.get("leave_type_id") as string,
     start_date: formData.get("start_date") as string,
     end_date: formData.get("end_date") as string,
     reason: (formData.get("reason") as string) || undefined,
-    half_day_period:
-      halfDayRaw === "am" || halfDayRaw === "pm" ? halfDayRaw : undefined,
+    start_half:
+      startHalfRaw === "am" || startHalfRaw === "pm" ? startHalfRaw : undefined,
+    end_half: endHalfRaw === "am" || endHalfRaw === "pm" ? endHalfRaw : undefined,
   };
 
   const parsed = leaveRequestSchema.safeParse(rawData);
   if (!parsed.success) return { error: parsed.error.issues[0].message };
-
-  // Half-day must be a single date
-  if (parsed.data.half_day_period && parsed.data.start_date !== parsed.data.end_date) {
-    return { error: "Half-day leave must be on a single date" };
-  }
 
   const { data: profile } = await supabase
     .from("profiles")
@@ -55,8 +52,20 @@ export async function fileLeaveRequest(_prevState: unknown, formData: FormData) 
 
   if (totalDays === 0) return { error: "No work days in selected range" };
 
-  // Half-day collapses to 0.5 day regardless of range length (already enforced single date above)
-  if (parsed.data.half_day_period) totalDays = 0.5;
+  // Apply half-day adjustments. For a multi-day leave:
+  //   start_half='pm' → first day is only PM (half)
+  //   end_half='am'   → last day is only AM (half)
+  // For a same-day leave, 'am' or 'pm' just marks the half.
+  if (parsed.data.start_date === parsed.data.end_date) {
+    if (parsed.data.start_half || parsed.data.end_half) {
+      totalDays = 0.5;
+    }
+  } else {
+    if (parsed.data.start_half === "pm") totalDays -= 0.5;
+    if (parsed.data.end_half === "am") totalDays -= 0.5;
+  }
+
+  if (totalDays < 0.5) return { error: "Invalid half-day configuration" };
 
   // Check leave type validity
   const { data: leaveType } = await supabase
@@ -143,7 +152,8 @@ export async function fileLeaveRequest(_prevState: unknown, formData: FormData) 
       start_date: parsed.data.start_date,
       end_date: parsed.data.end_date,
       total_days: totalDays,
-      half_day_period: parsed.data.half_day_period ?? null,
+      start_half: parsed.data.start_half ?? null,
+      end_half: parsed.data.end_half ?? null,
       reason: parsed.data.reason ?? null,
       attachment_url: attachmentUrl,
     })
@@ -269,6 +279,81 @@ export async function cancelLeaveRequest(requestId: string) {
     const { cancelApprovalRequest } = await import("@/lib/actions/approvals");
     await cancelApprovalRequest(approvalReq.id);
   }
+
+  revalidatePath("/leave");
+  return { success: true };
+}
+
+/**
+ * Request cancellation of a filed (pending) or approved leave.
+ * Goes through the standard approval chain. When the cancellation is approved
+ * by applyApprovalSideEffects, the leave status becomes 'cancelled' and, if
+ * the leave was previously approved, the balance is refunded.
+ */
+export async function requestLeaveCancellation(requestId: string, reason: string) {
+  const supabase = await createClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Not authenticated" };
+
+  const { data: request } = await supabase
+    .from("leave_requests")
+    .select("id, status, profile_id, company_id, start_date, end_date, total_days, leave_types(name, code), cancellation_approval_id")
+    .eq("id", requestId)
+    .eq("profile_id", user.id)
+    .single();
+
+  if (!request) return { error: "Leave not found" };
+  if (request.status !== "pending" && request.status !== "approved") {
+    return { error: "Only pending or approved leaves can be cancelled" };
+  }
+  if (request.cancellation_approval_id) {
+    return { error: "A cancellation request is already in progress" };
+  }
+  if (!reason || reason.trim().length < 3) {
+    return { error: "Cancellation reason is required" };
+  }
+
+  const { createApprovalRequest } = await import("@/lib/actions/approvals");
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const leaveType = (request as any).leave_types;
+  const approvalResult = await createApprovalRequest({
+    companyId: request.company_id,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    type: "leave_cancellation" as any,
+    referenceId: request.id,
+    requesterId: user.id,
+    details: `<p><strong>Cancellation Request</strong></p>
+      <p><strong>Leave Type:</strong> ${leaveType?.name ?? ""} (${leaveType?.code ?? ""})</p>
+      <p><strong>Dates:</strong> ${request.start_date} to ${request.end_date}</p>
+      <p><strong>Days:</strong> ${request.total_days}</p>
+      <p><strong>Reason for Cancellation:</strong> ${reason}</p>`,
+  });
+
+  if ("error" in approvalResult) return { error: approvalResult.error };
+
+  // Mark the leave with pending cancellation. The approval SHA/id isn't returned
+  // by createApprovalRequest today, so we look it up by type+reference.
+  const { data: approvalReq } = await supabase
+    .from("approval_requests")
+    .select("id")
+    .eq("type", "leave_cancellation")
+    .eq("reference_id", requestId)
+    .eq("status", "pending")
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .single();
+
+  await supabase
+    .from("leave_requests")
+    .update({
+      cancellation_requested_at: new Date().toISOString(),
+      cancellation_reason: reason.trim(),
+      cancellation_approval_id: approvalReq?.id ?? null,
+    })
+    .eq("id", requestId);
 
   revalidatePath("/leave");
   return { success: true };

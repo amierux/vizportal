@@ -940,7 +940,8 @@ export async function fetchOutOfOffice(): Promise<{
     leaveType: string;
     startDate: string;
     endDate: string;
-    halfDayPeriod: "am" | "pm" | null;
+    startHalf: "am" | "pm" | null;
+    endHalf: "am" | "pm" | null;
   }>;
   holidays: Array<{ name: string; date: string }>;
 }> {
@@ -966,7 +967,7 @@ export async function fetchOutOfOffice(): Promise<{
   const { data: leaves } = await supabase
     .from("leave_requests")
     .select(
-      "start_date, end_date, half_day_period, profiles(first_name, last_name), leave_types(name)",
+      "start_date, end_date, start_half, end_half, profiles(first_name, last_name), leave_types(name)",
     )
     .eq("company_id", companyId)
     .eq("status", "approved")
@@ -990,7 +991,8 @@ export async function fetchOutOfOffice(): Promise<{
       leaveType: row.leave_types?.name ?? "",
       startDate: row.start_date,
       endDate: row.end_date,
-      halfDayPeriod: row.half_day_period ?? null,
+      startHalf: row.start_half ?? null,
+      endHalf: row.end_half ?? null,
     })),
     holidays: (holidays ?? []).map((h: any) => ({ name: h.name, date: h.date })),
   };

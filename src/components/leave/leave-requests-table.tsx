@@ -12,10 +12,18 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { formatDate } from "@/lib/utils/format";
-import { cancelLeaveRequest } from "@/lib/actions/leave";
+import { requestLeaveCancellation } from "@/lib/actions/leave";
 import { toast } from "sonner";
 import { X } from "lucide-react";
 import { RequestDetailDialog } from "@/components/shared/request-detail-dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
 
 type LeaveRequestRow = {
   id: string;
@@ -25,6 +33,8 @@ type LeaveRequestRow = {
   status: string;
   reason: string | null;
   created_at: string;
+  cancellation_approval_id?: string | null;
+  cancellation_reason?: string | null;
   leave_types: { name: string; code: string } | null;
 };
 
@@ -42,12 +52,31 @@ const STATUS_VARIANTS: Record<string, "default" | "secondary" | "destructive" | 
 
 export function LeaveRequestsTable({ requests, showEmployee }: LeaveRequestsTableProps) {
   const [detailRequest, setDetailRequest] = useState<LeaveRequestRow | null>(null);
+  const [cancelTarget, setCancelTarget] = useState<LeaveRequestRow | null>(null);
+  const [cancelReason, setCancelReason] = useState("");
+  const [submitting, setSubmitting] = useState(false);
 
-  async function handleCancel(e: React.MouseEvent, id: string) {
+  function openCancel(e: React.MouseEvent, req: LeaveRequestRow) {
     e.stopPropagation();
-    const result = await cancelLeaveRequest(id);
-    if ("error" in result) toast.error(result.error);
-    else toast.success("Leave request cancelled");
+    setCancelReason("");
+    setCancelTarget(req);
+  }
+
+  async function submitCancel() {
+    if (!cancelTarget) return;
+    if (cancelReason.trim().length < 3) {
+      toast.error("Please enter a reason");
+      return;
+    }
+    setSubmitting(true);
+    const result = await requestLeaveCancellation(cancelTarget.id, cancelReason.trim());
+    setSubmitting(false);
+    if ("error" in result) {
+      toast.error(result.error);
+    } else {
+      toast.success("Cancellation request submitted for approval");
+      setCancelTarget(null);
+    }
   }
 
   return (
@@ -107,14 +136,22 @@ export function LeaveRequestsTable({ requests, showEmployee }: LeaveRequestsTabl
                 </TableCell>
                 <TableCell>{formatDate(req.created_at)}</TableCell>
                 <TableCell>
-                  {req.status === "pending" && (
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={(e) => handleCancel(e, req.id)}
-                    >
-                      <X className="h-4 w-4" />
-                    </Button>
+                  {(req.status === "pending" || req.status === "approved") &&
+                    !req.cancellation_approval_id && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="text-xs"
+                        onClick={(e) => openCancel(e, req)}
+                      >
+                        <X className="mr-1 h-3.5 w-3.5" />
+                        Request Cancel
+                      </Button>
+                    )}
+                  {req.cancellation_approval_id && (
+                    <Badge variant="outline" className="text-xs">
+                      Cancel Pending
+                    </Badge>
                   )}
                 </TableCell>
               </TableRow>
@@ -163,6 +200,46 @@ export function LeaveRequestsTable({ requests, showEmployee }: LeaveRequestsTabl
           </div>
         </RequestDetailDialog>
       )}
+
+      <Dialog open={!!cancelTarget} onOpenChange={(o) => !o && setCancelTarget(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Request Leave Cancellation</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3 py-2">
+            <p className="text-sm text-muted-foreground">
+              {cancelTarget && (
+                <>
+                  You are requesting cancellation of{" "}
+                  <span className="font-medium text-foreground">
+                    {cancelTarget.leave_types?.name ?? "this leave"}
+                  </span>
+                  {" "}from{" "}
+                  <span className="font-medium text-foreground">
+                    {formatDate(cancelTarget.start_date)} – {formatDate(cancelTarget.end_date)}
+                  </span>
+                  . The cancellation will go through the normal approval chain.
+                </>
+              )}
+            </p>
+            <Textarea
+              placeholder="Reason for cancellation..."
+              value={cancelReason}
+              onChange={(e) => setCancelReason(e.target.value)}
+              rows={3}
+              autoFocus
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setCancelTarget(null)}>
+              Back
+            </Button>
+            <Button onClick={submitCancel} disabled={submitting}>
+              {submitting ? "Submitting..." : "Submit Request"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }

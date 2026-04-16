@@ -14,7 +14,7 @@ import { getSystemSetting } from "@/lib/utils/settings";
  */
 export async function createApprovalRequest(params: {
   companyId: string;
-  type: "manual_clock" | "leave_request" | "overtime";
+  type: "manual_clock" | "leave_request" | "overtime" | "leave_cancellation";
   referenceId: string;
   requesterId: string;
   details: string;
@@ -470,6 +470,48 @@ async function applyApprovalSideEffects(supabase: any, type: string, referenceId
       .from("overtime_requests")
       .update({ status: "approved" })
       .eq("id", referenceId);
+  } else if (type === "leave_cancellation") {
+    // Fetch the leave being cancelled
+    const { data: leaveReq } = await supabase
+      .from("leave_requests")
+      .select("id, profile_id, leave_type_id, total_days, start_date, status")
+      .eq("id", referenceId)
+      .single();
+
+    if (leaveReq) {
+      const wasApproved = leaveReq.status === "approved";
+
+      // Flip the leave to cancelled and clear the pending-cancellation pointer
+      await supabase
+        .from("leave_requests")
+        .update({
+          status: "cancelled",
+          cancellation_approval_id: null,
+        })
+        .eq("id", referenceId);
+
+      // Refund balance only if the leave was previously approved (balance was deducted)
+      if (wasApproved) {
+        const year = new Date(leaveReq.start_date).getFullYear();
+        const { data: balance } = await supabase
+          .from("leave_balances")
+          .select("id, used_days, remaining_days")
+          .eq("profile_id", leaveReq.profile_id)
+          .eq("leave_type_id", leaveReq.leave_type_id)
+          .eq("year", year)
+          .single();
+
+        if (balance) {
+          await supabase
+            .from("leave_balances")
+            .update({
+              used_days: Math.max(0, balance.used_days - leaveReq.total_days),
+              remaining_days: balance.remaining_days + leaveReq.total_days,
+            })
+            .eq("id", balance.id);
+        }
+      }
+    }
   }
 }
 
@@ -494,6 +536,13 @@ async function applyRejectionSideEffects(supabase: any, type: string, referenceI
     await supabase
       .from("overtime_requests")
       .update({ status: "rejected" })
+      .eq("id", referenceId);
+  } else if (type === "leave_cancellation") {
+    // Rejection of a cancellation request leaves the original leave untouched —
+    // just clear the pending pointer so the employee can file another request.
+    await supabase
+      .from("leave_requests")
+      .update({ cancellation_approval_id: null })
       .eq("id", referenceId);
   }
 }

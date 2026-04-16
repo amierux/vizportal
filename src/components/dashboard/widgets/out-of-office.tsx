@@ -10,7 +10,8 @@ type OnLeave = {
   leaveType: string;
   startDate: string;
   endDate: string;
-  halfDayPeriod: "am" | "pm" | null;
+  startHalf: "am" | "pm" | null;
+  endHalf: "am" | "pm" | null;
 };
 type Holiday = { name: string; date: string };
 
@@ -36,28 +37,40 @@ export function OutOfOfficeWidget({ data }: Props) {
             <p className="text-sm text-muted-foreground">Everyone is in today.</p>
           ) : (
             <div className="space-y-1.5">
-              {data.onLeave.map((l, i) => (
-                <div
-                  key={i}
-                  className="flex items-center justify-between rounded-md border p-2 text-sm"
-                >
-                  <div className="flex flex-col gap-0.5">
-                    <div className="flex items-center gap-1.5 font-medium">
-                      {l.name}
-                      {l.halfDayPeriod && (
-                        <Badge variant="outline" className="text-[10px] uppercase">
-                          {l.halfDayPeriod}
-                        </Badge>
-                      )}
-                    </div>
-                    <div className="text-xs text-muted-foreground">
-                      {l.leaveType}
-                      {l.startDate !== l.endDate &&
-                        ` — until ${formatDate(l.endDate)}`}
+              {data.onLeave.map((l, i) => {
+                const sameDay = l.startDate === l.endDate;
+                const todayHalf = sameDay
+                  ? l.startHalf ?? l.endHalf
+                  : null;
+                const halfLabel = todayHalf
+                  ? todayHalf.toUpperCase()
+                  : l.startHalf === "pm"
+                  ? "from PM"
+                  : l.endHalf === "am"
+                  ? "until AM"
+                  : null;
+                return (
+                  <div
+                    key={i}
+                    className="flex items-center justify-between rounded-md border p-2 text-sm"
+                  >
+                    <div className="flex flex-col gap-0.5">
+                      <div className="flex items-center gap-1.5 font-medium">
+                        {l.name}
+                        {halfLabel && (
+                          <Badge variant="outline" className="text-[10px]">
+                            {halfLabel}
+                          </Badge>
+                        )}
+                      </div>
+                      <div className="text-xs text-muted-foreground">
+                        {l.leaveType}
+                        {!sameDay && ` — until ${formatDate(l.endDate)}`}
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>

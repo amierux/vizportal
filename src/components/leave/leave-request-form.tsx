@@ -34,13 +34,19 @@ type LeaveRequestFormProps = {
   users: User[];
 };
 
+type HalfMode = "full" | "am" | "pm";
+
 export function LeaveRequestForm({ leaveTypes, users }: LeaveRequestFormProps) {
   const [state, formAction, isPending] = useActionState(fileLeaveRequest, null);
   const [open, setOpen] = useState(false);
   const [selectedTypeId, setSelectedTypeId] = useState<string>("");
   const [relieverCount, setRelieverCount] = useState(1);
-  const [duration, setDuration] = useState<"full" | "am" | "pm">("full");
   const [startDate, setStartDate] = useState<string>("");
+  const [endDate, setEndDate] = useState<string>("");
+  // Start half-mode: "full" = whole start day; "pm" = only PM of start day (morning is work)
+  const [startMode, setStartMode] = useState<HalfMode>("full");
+  // End half-mode: "full" = whole end day; "am" = only AM of end day (afternoon is work)
+  const [endMode, setEndMode] = useState<HalfMode>("full");
 
   useEffect(() => {
     if (state && "success" in state) {
@@ -49,8 +55,10 @@ export function LeaveRequestForm({ leaveTypes, users }: LeaveRequestFormProps) {
       setOpen(false);
       setSelectedTypeId("");
       setRelieverCount(1);
-      setDuration("full");
       setStartDate("");
+      setEndDate("");
+      setStartMode("full");
+      setEndMode("full");
     }
     if (state && "error" in state) toast.error(state.error);
   }, [state]);
@@ -58,6 +66,27 @@ export function LeaveRequestForm({ leaveTypes, users }: LeaveRequestFormProps) {
   const activeTypes = leaveTypes.filter((t) => t.is_active);
   const selectedType = activeTypes.find((t) => t.id === selectedTypeId);
   const requiresReliever = selectedType?.requires_reliever ?? false;
+
+  const isSameDay = startDate && endDate && startDate === endDate;
+
+  // Live days preview
+  const daysPreview = (() => {
+    if (!startDate || !endDate) return null;
+    if (isSameDay) {
+      if (startMode === "full" && endMode === "full") return 1;
+      // Same-day half: either AM or PM only
+      if ((startMode === "am" && endMode !== "pm") || (endMode === "am" && startMode !== "pm")) return 0.5;
+      if ((startMode === "pm" && endMode !== "am") || (endMode === "pm" && startMode !== "am")) return 0.5;
+      return 0.5;
+    }
+    // Multi-day: approximate calendar day count (server computes workdays)
+    const ms = new Date(endDate).getTime() - new Date(startDate).getTime();
+    if (ms < 0) return null;
+    let d = Math.floor(ms / 86400000) + 1;
+    if (startMode === "pm") d -= 0.5;
+    if (endMode === "am") d -= 0.5;
+    return d;
+  })();
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -94,49 +123,10 @@ export function LeaveRequestForm({ leaveTypes, users }: LeaveRequestFormProps) {
             </Select>
           </div>
 
-          <div className="space-y-2">
-            <Label>Duration</Label>
-            <Select
-              name="half_day_period_ui"
-              value={duration}
-              onValueChange={(v) => setDuration((v ?? "full") as "full" | "am" | "pm")}
-            >
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="full">Full Day</SelectItem>
-                <SelectItem value="am">Half Day — Morning (AM)</SelectItem>
-                <SelectItem value="pm">Half Day — Afternoon (PM)</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* Hidden input submits the actual value to the server */}
-          {duration !== "full" && (
-            <input type="hidden" name="half_day_period" value={duration} />
-          )}
-
-          {duration === "full" ? (
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Start Date</Label>
-                <Input
-                  name="start_date"
-                  type="date"
-                  value={startDate}
-                  onChange={(e) => setStartDate(e.target.value)}
-                  required
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>End Date</Label>
-                <Input name="end_date" type="date" required />
-              </div>
-            </div>
-          ) : (
+          {/* Start date + start half-mode */}
+          <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label>Date</Label>
+              <Label>Start Date</Label>
               <Input
                 name="start_date"
                 type="date"
@@ -144,12 +134,79 @@ export function LeaveRequestForm({ leaveTypes, users }: LeaveRequestFormProps) {
                 onChange={(e) => setStartDate(e.target.value)}
                 required
               />
-              {/* End date mirrors start for half-day */}
-              <input type="hidden" name="end_date" value={startDate} />
-              <p className="text-xs text-muted-foreground">
-                0.5 day will be deducted from your balance.
-              </p>
             </div>
+            <div className="space-y-2">
+              <Label>Start</Label>
+              <Select
+                value={startMode}
+                onValueChange={(v) => setStartMode((v ?? "full") as HalfMode)}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="full">Full Day</SelectItem>
+                  {isSameDay ? (
+                    <>
+                      <SelectItem value="am">AM Only</SelectItem>
+                      <SelectItem value="pm">PM Only</SelectItem>
+                    </>
+                  ) : (
+                    <SelectItem value="pm">PM Only (afternoon)</SelectItem>
+                  )}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          {/* End date + end half-mode */}
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label>End Date</Label>
+              <Input
+                name="end_date"
+                type="date"
+                value={endDate}
+                onChange={(e) => setEndDate(e.target.value)}
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>End</Label>
+              <Select
+                value={endMode}
+                onValueChange={(v) => setEndMode((v ?? "full") as HalfMode)}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="full">Full Day</SelectItem>
+                  {isSameDay ? (
+                    <>
+                      <SelectItem value="am">AM Only</SelectItem>
+                      <SelectItem value="pm">PM Only</SelectItem>
+                    </>
+                  ) : (
+                    <SelectItem value="am">AM Only (morning)</SelectItem>
+                  )}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          {/* Hidden fields with the actual values the server validates */}
+          {startMode !== "full" && (
+            <input type="hidden" name="start_half" value={startMode} />
+          )}
+          {endMode !== "full" && (
+            <input type="hidden" name="end_half" value={endMode} />
+          )}
+
+          {daysPreview !== null && (
+            <p className="text-xs text-muted-foreground">
+              Estimated: <span className="font-medium text-foreground">{daysPreview} day{daysPreview === 1 ? "" : "s"}</span> will be deducted.
+            </p>
           )}
 
           <div className="space-y-2">
