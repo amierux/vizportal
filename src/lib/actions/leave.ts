@@ -160,7 +160,10 @@ export async function fileLeaveRequest(_prevState: unknown, formData: FormData) 
     .select("id")
     .single();
 
-  if (insertError || !request) return { error: "Failed to create leave request" };
+  if (insertError || !request) {
+    console.error("Leave insert error:", insertError?.message, insertError?.code);
+    return { error: insertError?.message ?? "Failed to create leave request" };
+  }
 
   // Create reliever records
   const relieverIds: string[] = [];

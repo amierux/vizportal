@@ -22,12 +22,14 @@ export async function createApprovalRequest(params: {
 }) {
   const supabase = await createClient();
 
-  // 1. Read approval_configs for the given type + company
+  // 1. Read approval_configs for the given type + company.
+  //    leave_cancellation reuses the leave_request config.
+  const configType = params.type === "leave_cancellation" ? "leave_request" : params.type;
   const { data: config } = await supabase
     .from("approval_configs")
     .select("id, is_enabled")
     .eq("company_id", params.companyId)
-    .eq("type", params.type)
+    .eq("type", configType)
     .single();
 
   // 2. Auto-approve if config is disabled
@@ -165,7 +167,10 @@ export async function createApprovalRequest(params: {
     .select("id")
     .single();
 
-  if (reqError || !request) return { error: "Failed to create approval request" };
+  if (reqError || !request) {
+    console.error("Approval insert error:", reqError?.message, reqError?.code, reqError?.details);
+    return { error: reqError?.message ?? "Failed to create approval request" };
+  }
 
   // Create approval steps (one row per approver, preserving step_order for siblings)
   for (const resolvedStep of resolvedSteps) {
