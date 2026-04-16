@@ -12,11 +12,21 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Eye } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
+import { Eye, X } from "lucide-react";
 import { RecordsFilterBar } from "@/components/shared/records-filter-bar";
 import { RequestDetailDialog } from "@/components/shared/request-detail-dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { getLeaveRecords, type RecordScope } from "@/lib/actions/records";
+import { requestLeaveCancellation } from "@/lib/actions/leave";
 import { formatDate } from "@/lib/utils/format";
+import { toast } from "sonner";
 import type { RoleName } from "@/types";
 
 type Department = { id: string; name: string };
@@ -40,6 +50,10 @@ export function LeaveRecords({ userRoles, departments }: LeaveRecordsProps) {
   const [activeScope, setActiveScope] = useState<RecordScope>("personal");
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [viewing, setViewing] = useState<any | null>(null);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [cancelTarget, setCancelTarget] = useState<any | null>(null);
+  const [cancelReason, setCancelReason] = useState("");
+  const [submitting, setSubmitting] = useState(false);
 
   const isTeamLeader = userRoles.includes("team_leader");
   const isDeptManager = userRoles.includes("dept_manager");
@@ -131,6 +145,16 @@ export function LeaveRecords({ userRoles, departments }: LeaveRecordsProps) {
     }
   }
 
+  async function submitCancel() {
+    if (!cancelTarget) return;
+    if (cancelReason.trim().length < 3) { toast.error("Please enter a reason"); return; }
+    setSubmitting(true);
+    const result = await requestLeaveCancellation(cancelTarget.id, cancelReason.trim());
+    setSubmitting(false);
+    if ("error" in result) { toast.error(result.error); }
+    else { toast.success("Cancellation request submitted for approval"); setCancelTarget(null); }
+  }
+
   const showNameColumn = activeScope !== "personal";
 
   return (
@@ -204,9 +228,27 @@ export function LeaveRecords({ userRoles, departments }: LeaveRecordsProps) {
                       </TableCell>
                       <TableCell>{formatDate(r.created_at)}</TableCell>
                       <TableCell>
-                        <Button variant="ghost" size="icon" onClick={() => setViewing(r)}>
-                          <Eye className="h-4 w-4" />
-                        </Button>
+                        <div className="flex items-center gap-1">
+                          <Button variant="ghost" size="icon" onClick={() => setViewing(r)}>
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                          {activeScope === "personal" &&
+                            (r.status === "pending" || r.status === "approved") &&
+                            !r.cancellation_approval_id && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="text-xs"
+                                onClick={() => { setCancelReason(""); setCancelTarget(r); }}
+                              >
+                                <X className="mr-1 h-3.5 w-3.5" />
+                                Cancel
+                              </Button>
+                            )}
+                          {r.cancellation_approval_id && (
+                            <Badge variant="outline" className="text-xs">Cancel Pending</Badge>
+                          )}
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))}
@@ -235,6 +277,41 @@ export function LeaveRecords({ userRoles, departments }: LeaveRecordsProps) {
           </div>
         </RequestDetailDialog>
       )}
+
+      <Dialog open={!!cancelTarget} onOpenChange={(o) => !o && setCancelTarget(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Request Leave Cancellation</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3 py-2">
+            <p className="text-sm text-muted-foreground">
+              {cancelTarget && (
+                <>
+                  Requesting cancellation of{" "}
+                  <span className="font-medium text-foreground">
+                    {cancelTarget.leave_types?.name ?? "this leave"}
+                  </span>{" "}
+                  from {formatDate(cancelTarget.start_date)} – {formatDate(cancelTarget.end_date)}.
+                  This will go through the approval chain.
+                </>
+              )}
+            </p>
+            <Textarea
+              placeholder="Reason for cancellation..."
+              value={cancelReason}
+              onChange={(e) => setCancelReason(e.target.value)}
+              rows={3}
+              autoFocus
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setCancelTarget(null)}>Back</Button>
+            <Button onClick={submitCancel} disabled={submitting}>
+              {submitting ? "Submitting..." : "Submit Request"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

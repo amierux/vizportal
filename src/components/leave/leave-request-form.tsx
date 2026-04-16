@@ -146,14 +146,8 @@ export function LeaveRequestForm({ leaveTypes, users }: LeaveRequestFormProps) {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="full">Full Day</SelectItem>
-                  {isSameDay ? (
-                    <>
-                      <SelectItem value="am">AM Only</SelectItem>
-                      <SelectItem value="pm">PM Only</SelectItem>
-                    </>
-                  ) : (
-                    <SelectItem value="pm">PM Only (afternoon)</SelectItem>
-                  )}
+                  <SelectItem value="am">AM Only</SelectItem>
+                  <SelectItem value="pm">PM Only</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -182,14 +176,8 @@ export function LeaveRequestForm({ leaveTypes, users }: LeaveRequestFormProps) {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="full">Full Day</SelectItem>
-                  {isSameDay ? (
-                    <>
-                      <SelectItem value="am">AM Only</SelectItem>
-                      <SelectItem value="pm">PM Only</SelectItem>
-                    </>
-                  ) : (
-                    <SelectItem value="am">AM Only (morning)</SelectItem>
-                  )}
+                  <SelectItem value="am">AM Only</SelectItem>
+                  <SelectItem value="pm">PM Only</SelectItem>
                 </SelectContent>
               </Select>
             </div>
