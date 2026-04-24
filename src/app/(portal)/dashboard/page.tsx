@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server";
+import { getUserRoles } from "@/lib/actions/helpers";
 import {
   getMyWidgets,
   seedDefaultWidgets,
@@ -24,7 +24,6 @@ import {
   fetchOutOfOffice,
 } from "@/lib/actions/dashboard";
 import { DashboardGrid } from "@/components/dashboard/dashboard-grid";
-import type { RoleName } from "@/types";
 
 const WIDGET_FETCHERS: Record<string, () => Promise<unknown>> = {
   attendance_today: fetchAttendanceToday,
@@ -50,28 +49,15 @@ const WIDGET_FETCHERS: Record<string, () => Promise<unknown>> = {
 };
 
 export default async function DashboardPage() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return null;
+  const roles = await getUserRoles();
+  if (roles.length === 0) return null;
 
-  // Get user roles
-  const { data: userRoles } = await supabase
-    .from("user_roles")
-    .select("roles(name)")
-    .eq("profile_id", user.id);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const roles: RoleName[] = (userRoles ?? []).map((ur: any) => ur.roles.name);
-
-  // Seed defaults if needed
   let widgets = await getMyWidgets();
   if (widgets.length === 0) {
     await seedDefaultWidgets(roles);
     widgets = await getMyWidgets();
   }
 
-  // Fetch data for all widgets in parallel — resilient to individual failures
   const uniqueTypes = Array.from(new Set(widgets.map((w) => w.widget_type)));
   const dataEntries = await Promise.all(
     uniqueTypes.map(async (type) => {
