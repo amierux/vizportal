@@ -1,6 +1,5 @@
 "use client";
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   LineChart,
   Line,
@@ -19,11 +18,11 @@ type Props = {
 
 export function AttendanceTrendWidget({ data }: Props) {
   return (
-    <Card className="card-hover">
-      <CardHeader className="pb-2">
-        <CardTitle className="text-sm font-medium text-muted-foreground">Attendance Trend (Last 30 Days)</CardTitle>
-      </CardHeader>
-      <CardContent>
+    <div>
+      <div className="pb-2">
+        <p className="text-sm font-medium text-muted-foreground">Attendance Trend (Last 30 Days)</p>
+      </div>
+      <div>
         {data.length === 0 ? (
           <p className="text-sm text-muted-foreground">No data yet.</p>
         ) : (
@@ -48,7 +47,7 @@ export function AttendanceTrendWidget({ data }: Props) {
             </LineChart>
           </ResponsiveContainer>
         )}
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }

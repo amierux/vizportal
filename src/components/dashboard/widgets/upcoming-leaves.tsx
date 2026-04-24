@@ -1,7 +1,5 @@
 "use client";
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-
 type UpcomingLeave = { name: string; leaveType: string; startDate: string; endDate: string };
 
 type Props = {
@@ -10,11 +8,11 @@ type Props = {
 
 export function UpcomingLeavesWidget({ data }: Props) {
   return (
-    <Card className="card-hover">
-      <CardHeader className="pb-2">
-        <CardTitle className="text-sm font-medium text-muted-foreground">Upcoming Leaves</CardTitle>
-      </CardHeader>
-      <CardContent>
+    <div>
+      <div className="pb-2">
+        <p className="text-sm font-medium text-muted-foreground">Upcoming Leaves</p>
+      </div>
+      <div>
         {data.length === 0 ? (
           <p className="text-sm text-muted-foreground">No upcoming leaves.</p>
         ) : (
@@ -29,7 +27,7 @@ export function UpcomingLeavesWidget({ data }: Props) {
             ))}
           </div>
         )}
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }

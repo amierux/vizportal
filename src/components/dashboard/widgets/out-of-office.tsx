@@ -1,6 +1,5 @@
 "use client";
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { formatDate } from "@/lib/utils/format";
 import { CalendarOff, UserX } from "lucide-react";
@@ -21,13 +20,13 @@ type Props = {
 
 export function OutOfOfficeWidget({ data }: Props) {
   return (
-    <Card className="card-hover">
-      <CardHeader className="pb-2">
-        <CardTitle className="text-sm font-medium text-muted-foreground">
+    <div>
+      <div className="pb-2">
+        <p className="text-sm font-medium text-muted-foreground">
           Out of Office
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-4">
+        </p>
+      </div>
+      <div className="space-y-4">
         <div>
           <div className="mb-2 flex items-center gap-1.5 text-xs font-semibold text-muted-foreground">
             <UserX className="h-3.5 w-3.5" />
@@ -96,7 +95,7 @@ export function OutOfOfficeWidget({ data }: Props) {
             </div>
           )}
         </div>
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }

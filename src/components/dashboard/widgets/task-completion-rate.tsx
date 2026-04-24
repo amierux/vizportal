@@ -1,6 +1,5 @@
 "use client";
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   BarChart,
   Bar,
@@ -25,11 +24,11 @@ export function TaskCompletionRateWidget({ data }: Props) {
   const total = data.completed + data.pending;
 
   return (
-    <Card className="card-hover">
-      <CardHeader className="pb-2">
-        <CardTitle className="text-sm font-medium text-muted-foreground">Task Completion Rate</CardTitle>
-      </CardHeader>
-      <CardContent>
+    <div>
+      <div className="pb-2">
+        <p className="text-sm font-medium text-muted-foreground">Task Completion Rate</p>
+      </div>
+      <div>
         {total === 0 ? (
           <p className="text-sm text-muted-foreground">No task data yet.</p>
         ) : (
@@ -46,7 +45,7 @@ export function TaskCompletionRateWidget({ data }: Props) {
             </BarChart>
           </ResponsiveContainer>
         )}
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }

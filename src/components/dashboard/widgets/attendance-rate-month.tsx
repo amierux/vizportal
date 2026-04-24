@@ -1,6 +1,5 @@
 "use client";
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   PieChart,
   Pie,
@@ -26,11 +25,11 @@ export function AttendanceRateMonthWidget({ data }: Props) {
   const total = data.present + data.late + data.absent;
 
   return (
-    <Card className="card-hover">
-      <CardHeader className="pb-2">
-        <CardTitle className="text-sm font-medium text-muted-foreground">Monthly Attendance Rate</CardTitle>
-      </CardHeader>
-      <CardContent>
+    <div>
+      <div className="pb-2">
+        <p className="text-sm font-medium text-muted-foreground">Monthly Attendance Rate</p>
+      </div>
+      <div>
         {total === 0 ? (
           <p className="text-sm text-muted-foreground">No data yet.</p>
         ) : (
@@ -58,7 +57,7 @@ export function AttendanceRateMonthWidget({ data }: Props) {
             </PieChart>
           </ResponsiveContainer>
         )}
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }

@@ -1,6 +1,5 @@
 "use client";
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   BarChart,
   Bar,
@@ -25,11 +24,11 @@ type Props = {
 
 export function DepartmentComparisonWidget({ data }: Props) {
   return (
-    <Card className="card-hover">
-      <CardHeader className="pb-2">
-        <CardTitle className="text-sm font-medium text-muted-foreground">Department Comparison</CardTitle>
-      </CardHeader>
-      <CardContent>
+    <div>
+      <div className="pb-2">
+        <p className="text-sm font-medium text-muted-foreground">Department Comparison</p>
+      </div>
+      <div>
         {data.length === 0 ? (
           <p className="text-sm text-muted-foreground">No data yet.</p>
         ) : (
@@ -46,7 +45,7 @@ export function DepartmentComparisonWidget({ data }: Props) {
             </BarChart>
           </ResponsiveContainer>
         )}
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }

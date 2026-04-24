@@ -1,6 +1,5 @@
 "use client";
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatPeso } from "@/lib/utils/payroll";
 
 type PayrollData = {
@@ -16,11 +15,11 @@ type Props = {
 
 export function PayrollSummaryWidget({ data }: Props) {
   return (
-    <Card className="card-hover">
-      <CardHeader className="pb-2">
-        <CardTitle className="text-sm font-medium text-muted-foreground">Latest Payroll</CardTitle>
-      </CardHeader>
-      <CardContent>
+    <div>
+      <div className="pb-2">
+        <p className="text-sm font-medium text-muted-foreground">Latest Payroll</p>
+      </div>
+      <div>
         {!data ? (
           <p className="text-sm text-muted-foreground">No payroll yet.</p>
         ) : (
@@ -38,7 +37,7 @@ export function PayrollSummaryWidget({ data }: Props) {
             </div>
           </div>
         )}
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }
