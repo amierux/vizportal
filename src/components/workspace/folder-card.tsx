@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { Card, CardContent } from "@/components/ui/card";
-import { Users, List } from "lucide-react";
+import { Users, List, Folder } from "lucide-react";
 
 type FolderCardProps = {
   folder: {
@@ -25,7 +25,7 @@ export function FolderCard({ folder }: FolderCardProps) {
         />
         <CardContent className="pl-5 py-4">
           <div className="flex items-start gap-3">
-            <span className="text-2xl leading-none mt-0.5">{folder.icon}</span>
+            <Folder className="h-6 w-6 shrink-0 mt-0.5 text-primary" />
             <div className="flex-1 min-w-0">
               <p className="font-semibold text-foreground truncate">{folder.name}</p>
               <div className="flex items-center gap-4 mt-2 text-xs text-muted-foreground">
