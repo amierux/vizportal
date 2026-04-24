@@ -181,7 +181,7 @@ export async function recalculateDailySummary(
       .order("timestamp", { ascending: true }),
     supabase
       .from("employee_schedules")
-      .select("start_time, end_time, work_days")
+      .select("start_time, end_time, work_days, timezone")
       .eq("profile_id", profileId)
       .single(),
     supabase
