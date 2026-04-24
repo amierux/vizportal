@@ -79,32 +79,34 @@ export function WidgetCard({ widget, data }: Props) {
 
   return (
     <div
-      className={`relative ${sizeClass(size)}`}
+      className={`relative ${sizeClass(size)} group`}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
     >
-      {renderWidget(widget.widget_type, data)}
+      <div className="glass-surface rounded-xl transition-shadow duration-200 hover:shadow-lg">
+        {renderWidget(widget.widget_type, data)}
+      </div>
 
       {hovered && (
-        <div className="absolute right-2 top-2 z-10 flex items-center gap-1 rounded-md border bg-background p-1 shadow-md">
+        <div className="absolute right-2 top-2 z-10 flex items-center gap-1 rounded-lg glass-floating p-1">
           <select
-            className="rounded border px-1 py-0.5 text-xs"
+            className="rounded border-none bg-transparent px-1 py-0.5 text-xs focus:outline-none"
             value={size}
             disabled={pending}
             onChange={(e) => handleSizeChange(e.target.value as WidgetSize)}
           >
-            <option value="small">Small</option>
-            <option value="medium">Medium</option>
-            <option value="large">Large</option>
+            <option value="small">S</option>
+            <option value="medium">M</option>
+            <option value="large">L</option>
           </select>
           <Button
             variant="ghost"
             size="sm"
-            className="h-6 px-1.5 text-xs text-red-600 hover:bg-red-50 hover:text-red-700"
+            className="h-6 px-1.5 text-xs text-destructive hover:bg-destructive/10"
             disabled={pending}
             onClick={handleRemove}
           >
-            Remove
+            ×
           </Button>
         </div>
       )}
