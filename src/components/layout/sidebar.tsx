@@ -76,19 +76,21 @@ export function Sidebar({ userRoles, userName, avatarUrl }: SidebarProps) {
   return (
     <aside
       className={cn(
-        "hidden md:flex flex-col border-r bg-card transition-all duration-200 ease-in-out",
+        "hidden md:flex flex-col border-r border-sidebar-border bg-sidebar transition-all duration-200 ease-in-out",
         collapsed ? "w-16" : "w-64"
       )}
     >
-      <div className="flex h-14 items-center justify-between border-b px-4">
+      <div className="flex h-14 items-center justify-between border-b border-sidebar-border px-4">
         {!collapsed && (
-          <span className="text-lg font-semibold">VizPortal</span>
+          <span className="text-lg font-bold tracking-tight text-sidebar-foreground">
+            VizPortal
+          </span>
         )}
         <button
           onClick={() => setCollapsed(!collapsed)}
           className={cn(
             buttonVariants({ variant: "ghost", size: "icon" }),
-            "ml-auto"
+            "ml-auto text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
           )}
           aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
         >
@@ -104,10 +106,10 @@ export function Sidebar({ userRoles, userName, avatarUrl }: SidebarProps) {
               key={item.href}
               href={item.href}
               className={cn(
-                "relative flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors duration-150",
+                "relative flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-all duration-200 ease-in-out",
                 isActive
-                  ? "bg-primary text-primary-foreground border-l-2 border-primary-foreground"
-                  : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+                  ? "bg-sidebar-primary text-sidebar-primary-foreground border-l-2 border-sidebar-ring"
+                  : "text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
               )}
             >
               <item.icon className="h-5 w-5 shrink-0" />
@@ -117,10 +119,10 @@ export function Sidebar({ userRoles, userName, avatarUrl }: SidebarProps) {
         })}
       </nav>
 
-      <div className="border-t p-2">
+      <div className="border-t border-sidebar-border p-2">
         <DropdownMenu>
           <DropdownMenuTrigger
-            className="flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm hover:bg-accent"
+            className="flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
           >
             <Avatar className="h-8 w-8">
               <AvatarImage src={avatarUrl ?? undefined} />
@@ -129,7 +131,7 @@ export function Sidebar({ userRoles, userName, avatarUrl }: SidebarProps) {
               </AvatarFallback>
             </Avatar>
             {!collapsed && (
-              <span className="truncate font-medium">{userName}</span>
+              <span className="truncate font-medium text-sidebar-foreground">{userName}</span>
             )}
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-48">
