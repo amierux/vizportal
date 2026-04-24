@@ -21,7 +21,8 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { CheckCircle2, XCircle, Download, Eye, FileSpreadsheet, FileText } from "lucide-react";
+import { CheckCircle2, XCircle, Download, Eye, FileSpreadsheet, FileText, Clock, FileQuestion } from "lucide-react";
+import { getTimesheetEntries } from "@/lib/actions/workspace-time-entries";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -126,6 +127,26 @@ export function TimesheetAllMembers({ submissions, departments }: Props) {
   const [isPending, startTransition] = useTransition();
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [viewing, setViewing] = useState<any | null>(null);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [viewEntries, setViewEntries] = useState<any[]>([]);
+  const [entriesLoading, setEntriesLoading] = useState(false);
+
+  async function handleView(submission: Submission) {
+    setViewing(submission);
+    setEntriesLoading(true);
+    try {
+      const entries = await getTimesheetEntries(
+        submission.profile_id,
+        submission.week_start_date,
+        submission.week_end_date,
+      );
+      setViewEntries(entries);
+    } catch {
+      setViewEntries([]);
+    } finally {
+      setEntriesLoading(false);
+    }
+  }
 
   const filtered = submissions.filter((s) => {
     if (filterStatus !== "all" && s.status !== filterStatus) return false;
@@ -255,7 +276,7 @@ export function TimesheetAllMembers({ submissions, departments }: Props) {
                         variant="ghost"
                         size="icon"
                         className="h-7 w-7"
-                        onClick={() => setViewing(s)}
+                        onClick={() => handleView(s)}
                       >
                         <Eye className="w-4 h-4" />
                       </Button>
@@ -292,16 +313,73 @@ export function TimesheetAllMembers({ submissions, departments }: Props) {
       {viewing && (
         <RequestDetailDialog
           open={!!viewing}
-          onOpenChange={(o) => !o && setViewing(null)}
+          onOpenChange={(o) => { if (!o) { setViewing(null); setViewEntries([]); } }}
           title={`Timesheet: ${viewing.profiles?.first_name ?? ""} ${viewing.profiles?.last_name ?? ""}`.trim()}
           showApproval={false}
         >
-          <div className="text-sm space-y-1">
-            <div><span className="text-muted-foreground">Employee:</span> {viewing.profiles?.first_name} {viewing.profiles?.last_name}</div>
-            <div><span className="text-muted-foreground">Week:</span> {formatDate(viewing.week_start_date)} — {formatDate(viewing.week_end_date)}</div>
-            <div><span className="text-muted-foreground">Total Hours:</span> {((viewing.total_minutes ?? 0) / 60).toFixed(1)}h</div>
-            <div><span className="text-muted-foreground">Status:</span> <Badge>{viewing.status}</Badge></div>
-            {viewing.submitted_at && <div><span className="text-muted-foreground">Submitted:</span> {formatDate(viewing.submitted_at)}</div>}
+          <div className="text-sm space-y-4">
+            {/* Summary */}
+            <div className="grid grid-cols-2 gap-2">
+              <div><span className="text-muted-foreground">Employee:</span> {viewing.profiles?.first_name} {viewing.profiles?.last_name}</div>
+              <div><span className="text-muted-foreground">Status:</span> <StatusBadge status={viewing.status} /></div>
+              <div><span className="text-muted-foreground">Week:</span> {formatDate(viewing.week_start_date)} — {formatDate(viewing.week_end_date)}</div>
+              <div><span className="text-muted-foreground">Total:</span> <span className="font-semibold">{((viewing.total_minutes ?? 0) / 60).toFixed(1)}h</span></div>
+              {viewing.submitted_at && <div><span className="text-muted-foreground">Submitted:</span> {formatDate(viewing.submitted_at)}</div>}
+            </div>
+
+            {/* Time Entries Breakdown */}
+            <div>
+              <h4 className="text-sm font-semibold mb-2 flex items-center gap-1.5">
+                <Clock className="h-4 w-4" />
+                Time Entries
+              </h4>
+              {entriesLoading ? (
+                <div className="text-muted-foreground text-sm py-4 text-center">Loading entries...</div>
+              ) : viewEntries.length === 0 ? (
+                <div className="flex flex-col items-center gap-2 py-4 text-muted-foreground text-sm">
+                  <FileQuestion className="h-8 w-8 opacity-40" />
+                  No time entries found for this week
+                </div>
+              ) : (
+                <div className="rounded-lg border overflow-hidden">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b bg-muted/50">
+                        <th className="px-3 py-1.5 text-left font-medium">Task</th>
+                        <th className="px-3 py-1.5 text-left font-medium">Date</th>
+                        <th className="px-3 py-1.5 text-right font-medium">Hours</th>
+                        <th className="px-3 py-1.5 text-left font-medium">Description</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {viewEntries.map((entry: any) => (
+                        <tr key={entry.id} className="border-b last:border-0 hover:bg-muted/20 transition-colors">
+                          <td className="px-3 py-1.5 font-medium">
+                            {entry.workspace_tasks?.name ?? <span className="text-muted-foreground italic">Unknown task</span>}
+                          </td>
+                          <td className="px-3 py-1.5 text-muted-foreground">{formatDate(entry.date)}</td>
+                          <td className="px-3 py-1.5 text-right font-mono">
+                            {(entry.duration_minutes / 60).toFixed(1)}h
+                          </td>
+                          <td className="px-3 py-1.5 text-muted-foreground max-w-[200px] truncate">
+                            {entry.description || "—"}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                    <tfoot>
+                      <tr className="bg-muted/30">
+                        <td className="px-3 py-1.5 font-semibold" colSpan={2}>Total</td>
+                        <td className="px-3 py-1.5 text-right font-mono font-semibold">
+                          {(viewEntries.reduce((sum: number, e: any) => sum + (e.duration_minutes ?? 0), 0) / 60).toFixed(1)}h
+                        </td>
+                        <td></td>
+                      </tr>
+                    </tfoot>
+                  </table>
+                </div>
+              )}
+            </div>
           </div>
         </RequestDetailDialog>
       )}

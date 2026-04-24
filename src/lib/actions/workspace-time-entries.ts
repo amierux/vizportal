@@ -73,6 +73,22 @@ export async function deleteTimeEntry(entryId: string) {
   return { success: true };
 }
 
+/**
+ * Fetch time entries for a specific employee's week (admin use — viewing timesheet submissions).
+ */
+export async function getTimesheetEntries(profileId: string, startDate: string, endDate: string) {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("workspace_time_entries")
+    .select("id, date, duration_minutes, description, is_billable, workspace_tasks:task_id(id, name)")
+    .eq("profile_id", profileId)
+    .gte("date", startDate)
+    .lte("date", endDate)
+    .order("date")
+    .order("created_at");
+  return data ?? [];
+}
+
 export async function searchMyTasks(query: string) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
