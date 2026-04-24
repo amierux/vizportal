@@ -1,10 +1,10 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { getUserProfile, getUserRoles } from "@/lib/actions/helpers";
 import { Sidebar } from "@/components/layout/sidebar";
 import { BottomTabs } from "@/components/layout/bottom-tabs";
 import { Header } from "@/components/layout/header";
 import { formatFullName } from "@/lib/utils/format";
-import type { RoleName } from "@/types";
 
 export default async function PortalLayout({
   children,
@@ -12,7 +12,6 @@ export default async function PortalLayout({
   children: React.ReactNode;
 }) {
   const supabase = await createClient();
-
   const {
     data: { user },
   } = await supabase.auth.getUser();
@@ -21,11 +20,10 @@ export default async function PortalLayout({
     redirect("/login");
   }
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("*")
-    .eq("id", user.id)
-    .single();
+  const [profile, roles] = await Promise.all([
+    getUserProfile(),
+    getUserRoles(),
+  ]);
 
   if (!profile) {
     redirect("/login");
@@ -34,16 +32,6 @@ export default async function PortalLayout({
   if (!profile.profile_completed) {
     redirect("/complete-profile");
   }
-
-  const { data: userRoles } = await supabase
-    .from("user_roles")
-    .select("role_id, roles(name)")
-    .eq("profile_id", user.id);
-
-  const roles: RoleName[] = (userRoles ?? []).map(
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (ur: any) => ur.roles.name as RoleName
-  );
 
   const userName = formatFullName(profile.first_name, profile.last_name);
 
