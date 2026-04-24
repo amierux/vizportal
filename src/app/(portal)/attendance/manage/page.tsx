@@ -2,6 +2,8 @@ import { createClient } from "@/lib/supabase/server";
 import { getAttendanceSummaries } from "@/lib/actions/attendance";
 import { AttendanceTable } from "@/components/attendance/attendance-table";
 import { SGT_TIMEZONE } from "@/lib/constants";
+import { fetchAttendanceAnalytics } from "@/lib/actions/analytics";
+import { AttendanceAnalytics } from "@/components/attendance/attendance-analytics";
 
 type SearchParams = Promise<{ [key: string]: string | undefined }>;
 
@@ -44,9 +46,12 @@ export default async function AttendanceManagePage({
     .eq("company_id", profile!.company_id)
     .order("name");
 
+  const analyticsData = await fetchAttendanceAnalytics();
+
   return (
     <div className="space-y-6">
       <h1 className="text-2xl font-bold">Attendance Management</h1>
+      <AttendanceAnalytics data={analyticsData} />
       {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
       <AttendanceTable rows={data as any} />
     </div>
