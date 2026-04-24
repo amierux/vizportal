@@ -1,7 +1,5 @@
 "use client";
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-
 type Props = {
   data: { count: number };
 };
@@ -15,14 +13,14 @@ export function LateCountMonthWidget({ data }: Props) {
         : "text-green-600";
 
   return (
-    <Card className="card-hover">
-      <CardHeader className="pb-2">
-        <CardTitle className="text-sm font-medium text-muted-foreground">Late Count This Month</CardTitle>
-      </CardHeader>
-      <CardContent>
+    <div>
+      <div className="pb-2">
+        <p className="text-sm font-medium text-muted-foreground">Late Count This Month</p>
+      </div>
+      <div>
         <div className={`text-2xl font-bold ${color}`}>{data.count}</div>
         <div className="mt-1 text-xs text-muted-foreground">times late</div>
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }

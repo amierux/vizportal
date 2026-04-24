@@ -1,8 +1,10 @@
 import { createClient } from "@/lib/supabase/server";
 import { getWeeklyTimesheet, getAllTimesheetSubmissions } from "@/lib/actions/timesheet";
+import { fetchTimesheetAnalytics } from "@/lib/actions/analytics";
 import { TimesheetWeeklyGrid } from "@/components/timesheet/timesheet-weekly-grid";
 import { TimesheetSubmission } from "@/components/timesheet/timesheet-submission";
 import { TimesheetAllMembers } from "@/components/timesheet/timesheet-all-members";
+import { TimesheetAnalytics } from "@/components/timesheet/timesheet-analytics";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
 import { buttonVariants } from "@/components/ui/button";
@@ -10,6 +12,8 @@ import Link from "next/link";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { RoleName } from "@/types";
+
+export const dynamic = "force-dynamic";
 
 function getMonday(date: Date): Date {
   const d = new Date(date);
@@ -100,7 +104,7 @@ export default async function TimesheetPage({ searchParams }: Props) {
   const { entries, submission } = await getWeeklyTimesheet(weekStartDate);
 
   // All submissions + departments (admin only)
-  const [allSubmissions, departments] = await Promise.all([
+  const [allSubmissions, departments, analyticsData] = await Promise.all([
     isAdminLevel ? getAllTimesheetSubmissions({}) : Promise.resolve([]),
     isAdminLevel
       ? supabase
@@ -110,14 +114,17 @@ export default async function TimesheetPage({ searchParams }: Props) {
           .order("name")
           .then(({ data }) => data ?? [])
       : Promise.resolve([]),
+    isAdminLevel ? fetchTimesheetAnalytics() : Promise.resolve(null),
   ]);
 
   return (
-    <div className="space-y-6 animate-fade-in-up">
+    <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold">Timesheet</h1>
         <p className="text-muted-foreground text-sm">Track and submit your weekly hours</p>
       </div>
+
+      <TimesheetAnalytics data={analyticsData} />
 
       <Separator />
 

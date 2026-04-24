@@ -1,11 +1,15 @@
 import { createClient } from "@/lib/supabase/server";
 import { getMyPayrollEntries, getPayrollPeriods, getPayrollEntries, getLatestDraftPeriod } from "@/lib/actions/payroll";
+import { fetchPayrollAnalytics } from "@/lib/actions/analytics";
 import { MyPayrollTable } from "@/components/payroll/my-payroll-table";
 import { AllPayrollTable } from "@/components/payroll/all-payroll-table";
 import { ProcessPayrollButton } from "@/components/payroll/process-payroll-button";
+import { PayrollAnalytics } from "@/components/payroll/payroll-analytics";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
 import type { RoleName } from "@/types";
+
+export const dynamic = "force-dynamic";
 
 export default async function PayrollPage() {
   const supabase = await createClient();
@@ -54,9 +58,10 @@ export default async function PayrollPage() {
     : [];
 
   const hasActivePeriod = !!draftPeriod;
+  const analyticsData = isAdminLevel ? await fetchPayrollAnalytics() : null;
 
   return (
-    <div className="space-y-6 animate-fade-in-up">
+    <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold">Payroll</h1>
@@ -70,6 +75,8 @@ export default async function PayrollPage() {
       </div>
 
       <Separator />
+
+      <PayrollAnalytics data={analyticsData} />
 
       {isAdminLevel ? (
         <Tabs defaultValue="my">

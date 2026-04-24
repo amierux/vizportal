@@ -2,6 +2,8 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { CompanyForm } from "@/components/company/company-form";
 
+export const dynamic = "force-dynamic";
+
 export default async function CompanySettingsPage() {
   const supabase = await createClient();
 
@@ -32,7 +34,7 @@ export default async function CompanySettingsPage() {
     .order("first_name");
 
   return (
-    <div className="mx-auto max-w-3xl space-y-8 animate-fade-in-up">
+    <div className="mx-auto max-w-3xl space-y-8">
       <div>
         <h2 className="text-xl font-semibold">Company Information</h2>
         <p className="text-sm text-muted-foreground">

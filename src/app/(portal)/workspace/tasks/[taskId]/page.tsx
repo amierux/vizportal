@@ -10,6 +10,8 @@ import { TaskDetailPanel } from "@/components/workspace/task-detail-panel";
 import { buttonVariants } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
 
+export const dynamic = "force-dynamic";
+
 type PageProps = {
   params: Promise<{ taskId: string }>;
 };
@@ -70,7 +72,7 @@ export default async function TaskDetailPage({ params }: PageProps) {
     : "/workspace";
 
   return (
-    <div className="animate-fade-in-up space-y-4">
+    <div className="space-y-4">
       <div className="flex items-center gap-2">
         <Link
           href={backHref}

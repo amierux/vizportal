@@ -4,6 +4,8 @@ import { getForm } from "@/lib/actions/forms";
 import { FormBuilder } from "@/components/forms/form-builder";
 import type { RoleName } from "@/types";
 
+export const dynamic = "force-dynamic";
+
 type Params = Promise<{ formId: string }>;
 
 export default async function FormBuilderPage({ params }: { params: Params }) {
@@ -77,7 +79,7 @@ export default async function FormBuilderPage({ params }: { params: Params }) {
   const profiles = profilesResult.data ?? [];
 
   return (
-    <div className="animate-fade-in-up">
+    <div>
       <FormBuilder
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         form={form as any}

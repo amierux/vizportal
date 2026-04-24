@@ -1,53 +1,42 @@
-import { getMyOvertimeRequests } from "@/lib/actions/overtime";
-import { OvertimeRequestForm } from "@/components/overtime/overtime-request-form";
-import { OvertimeRequestsTable } from "@/components/overtime/overtime-requests-table";
-import { OvertimeRecords } from "@/components/overtime/overtime-records";
+import { getMyOvertimeRequests, getOvertimeRecords } from "@/lib/actions/overtime";
+import { fetchOvertimeAnalytics } from "@/lib/actions/analytics";
+import { getUserProfile, getUserRoles } from "@/lib/actions/helpers";
 import { createClient } from "@/lib/supabase/server";
-import { Separator } from "@/components/ui/separator";
-import type { RoleName } from "@/types";
+import { OvertimePageClient } from "@/components/overtime/overtime-page-client";
+
+export const dynamic = "force-dynamic";
 
 export default async function OvertimePage() {
-  const requests = await getMyOvertimeRequests();
+  const [roles, profile] = await Promise.all([getUserRoles(), getUserProfile()]);
+  if (!profile) return null;
 
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("company_id")
-    .eq("id", user!.id)
-    .single();
-
-  const { data: userRoles } = await supabase
-    .from("user_roles")
-    .select("roles(name)")
-    .eq("profile_id", user!.id);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const roles: RoleName[] = (userRoles ?? []).map((ur: any) => ur.roles.name);
-
   const { data: departments } = await supabase
     .from("departments")
     .select("id, name")
-    .eq("company_id", profile!.company_id)
+    .eq("company_id", profile.company_id)
     .order("name");
 
+  const isAdminLevel = roles.some((r) =>
+    ["admin", "hr", "business_manager", "director", "dept_manager", "team_leader"].includes(r)
+  );
+
+  const now = new Date();
+  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split("T")[0];
+  const today = now.toISOString().split("T")[0];
+
+  const [myRequests, analyticsData] = await Promise.all([
+    getMyOvertimeRequests(),
+    isAdminLevel ? fetchOvertimeAnalytics() : null,
+  ]);
+
   return (
-    <div className="space-y-6 animate-fade-in-up">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Overtime</h1>
-        <OvertimeRequestForm />
-      </div>
-
-      <div>
-        <h2 className="mb-3 text-lg font-semibold">My Requests</h2>
-        {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-        <OvertimeRequestsTable requests={requests as any} />
-      </div>
-
-      <Separator />
-      <OvertimeRecords userRoles={roles} departments={departments ?? []} />
-    </div>
+    <OvertimePageClient
+      myRequests={myRequests as any}
+      analyticsData={analyticsData}
+      roles={roles}
+      departments={departments ?? []}
+      isAdminLevel={isAdminLevel}
+    />
   );
 }

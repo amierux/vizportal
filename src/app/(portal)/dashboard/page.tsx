@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server";
+import { getUserRoles } from "@/lib/actions/helpers";
 import {
   getMyWidgets,
   seedDefaultWidgets,
@@ -24,7 +24,8 @@ import {
   fetchOutOfOffice,
 } from "@/lib/actions/dashboard";
 import { DashboardGrid } from "@/components/dashboard/dashboard-grid";
-import type { RoleName } from "@/types";
+
+export const dynamic = "force-dynamic";
 
 const WIDGET_FETCHERS: Record<string, () => Promise<unknown>> = {
   attendance_today: fetchAttendanceToday,
@@ -50,28 +51,15 @@ const WIDGET_FETCHERS: Record<string, () => Promise<unknown>> = {
 };
 
 export default async function DashboardPage() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return null;
+  const roles = await getUserRoles();
+  if (roles.length === 0) return null;
 
-  // Get user roles
-  const { data: userRoles } = await supabase
-    .from("user_roles")
-    .select("roles(name)")
-    .eq("profile_id", user.id);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const roles: RoleName[] = (userRoles ?? []).map((ur: any) => ur.roles.name);
-
-  // Seed defaults if needed
   let widgets = await getMyWidgets();
   if (widgets.length === 0) {
     await seedDefaultWidgets(roles);
     widgets = await getMyWidgets();
   }
 
-  // Fetch data for all widgets in parallel — resilient to individual failures
   const uniqueTypes = Array.from(new Set(widgets.map((w) => w.widget_type)));
   const dataEntries = await Promise.all(
     uniqueTypes.map(async (type) => {
@@ -88,13 +76,46 @@ export default async function DashboardPage() {
   );
   const widgetData = Object.fromEntries(dataEntries);
 
+  // Build hero metrics from widget data
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const att = widgetData.attendance_today as any;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const tasks = widgetData.my_tasks_summary as any;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const tc = widgetData.task_completion_rate as any;
+
+  const totalAtt = (att?.companyPresent ?? 0) + (att?.companyLate ?? 0) + (att?.companyAbsent ?? 0);
+
+  const heroData = {
+    hoursToday: att?.myStatus === "present" || att?.myStatus === "late" ? 8 : 0,
+    leaveBalance: Array.isArray(widgetData.leave_balances)
+      ? (widgetData.leave_balances as any[]).reduce((sum: number, b: any) => sum + (b.remaining_days ?? 0), 0)
+      : 0,
+    myTasksDone: tasks?.done ?? 0,
+    myTasksTotal: (tasks?.todo ?? 0) + (tasks?.inProgress ?? 0) + (tasks?.done ?? 0),
+    pendingActions: ((widgetData.pending_approvals as any)?.count ?? 0) + ((widgetData.pending_forms as any)?.count ?? 0),
+    presentToday: (att?.companyPresent ?? 0) + (att?.companyLate ?? 0),
+    presentPercent: totalAtt > 0 ? Math.round(((att?.companyPresent ?? 0) + (att?.companyLate ?? 0)) / totalAtt * 100) : 0,
+    pendingApprovals: (widgetData.pending_approvals as any)?.count ?? 0,
+    payrollThisPeriod: (widgetData.payroll_summary as any)?.netPay ?? 0,
+    openTasks: tc?.pending ?? 0,
+    overduePercent: tc?.pending > 0 ? Math.round(((widgetData.overdue_tasks as any)?.count ?? 0) / tc.pending * 100) : 0,
+  };
+
   return (
-    <div className="space-y-6 animate-fade-in-up">
-      <div>
-        <h1 className="text-2xl font-bold">Dashboard</h1>
-        <p className="text-sm text-muted-foreground">Your personalized overview</p>
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold">Dashboard</h1>
+          <p className="text-sm text-muted-foreground">Your personalized overview</p>
+        </div>
       </div>
-      <DashboardGrid widgets={widgets} widgetData={widgetData} />
+      <DashboardGrid
+        widgets={widgets}
+        widgetData={widgetData}
+        roles={roles}
+        heroData={heroData}
+      />
     </div>
   );
 }

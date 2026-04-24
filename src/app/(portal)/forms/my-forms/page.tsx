@@ -4,6 +4,8 @@ import { getMyAssignedForms } from "@/lib/actions/forms";
 import { getMyFormSubmissions } from "@/lib/actions/form-submissions";
 import { MyFormsList } from "@/components/forms/my-forms-list";
 
+export const dynamic = "force-dynamic";
+
 export default async function MyFormsPage() {
   const supabase = await createClient();
 
@@ -18,7 +20,7 @@ export default async function MyFormsPage() {
   ]);
 
   return (
-    <div className="animate-fade-in-up space-y-4">
+    <div className="space-y-4">
       <div>
         <h1 className="text-2xl font-bold">My Forms</h1>
         <p className="mt-1 text-sm text-muted-foreground">

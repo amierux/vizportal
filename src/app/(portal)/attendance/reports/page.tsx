@@ -2,6 +2,8 @@ import { getMonthlyAttendanceReport } from "@/lib/actions/attendance";
 import { AttendanceSummaryTable } from "@/components/attendance/attendance-summary-table";
 import { formatFullName } from "@/lib/utils/format";
 
+export const dynamic = "force-dynamic";
+
 type SearchParams = Promise<{ [key: string]: string | undefined }>;
 
 export default async function AttendanceReportsPage({

@@ -2,6 +2,8 @@ import { notFound } from "next/navigation";
 import { createClient } from "@supabase/supabase-js";
 import { FormApprovalPublicPage } from "@/components/forms/form-approval-public-page";
 
+export const dynamic = "force-dynamic";
+
 function getAdminClient() {
   return createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,

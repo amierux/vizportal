@@ -734,6 +734,144 @@ export async function followUpApproval(type: string, referenceId: string) {
 }
 
 /**
+ * Get all approval steps assigned to the current user (pending + historical),
+ * with optional search and filter parameters.
+ */
+export async function getMyApprovals(params?: {
+  search?: string;
+  status?: string;
+  startDate?: string;
+  endDate?: string;
+}) {
+  const supabase = await createClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return [];
+
+  let query = supabase
+    .from("approval_steps")
+    .select(`
+      *,
+      approval_requests(
+        id, type, reference_id, requester_id, status, current_step, total_steps, created_at,
+        requester:profiles!approval_requests_requester_id_fkey(first_name, last_name, email)
+      )
+    `)
+    .eq("approver_id", user.id)
+    .order("created_at", { ascending: false });
+
+  if (params?.status && params.status !== "all") {
+    query = query.eq("status", params.status as "pending" | "approved" | "rejected");
+  }
+  if (params?.startDate) {
+    query = query.gte("created_at", params.startDate);
+  }
+  if (params?.endDate) {
+    query = query.lte("created_at", params.endDate + "T23:59:59");
+  }
+
+  const { data: steps } = await query;
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let results = (steps ?? []) as any[];
+
+  // Client-side search filter (requester name or type)
+  if (params?.search) {
+    const q = params.search.toLowerCase();
+    results = results.filter((step: any) => {
+      const req = step.approval_requests;
+      if (!req) return false;
+      const requester = req.requester;
+      const fullName = requester
+        ? `${requester.first_name ?? ""} ${requester.last_name ?? ""}`.toLowerCase()
+        : "";
+      const typeLabel = (req.type ?? "").toLowerCase();
+      return fullName.includes(q) || typeLabel.includes(q);
+    });
+  }
+
+  return results;
+}
+
+/**
+ * Get a single approval step (for the full-page detail view) by step ID.
+ * Also fetches all sibling steps for the approval timeline.
+ */
+export async function getApprovalStepDetail(stepId: string) {
+  const supabase = await createClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return null;
+
+  // Get the step + its parent request
+  const { data: step } = await supabase
+    .from("approval_steps")
+    .select(`
+      id, token, step_order, status, comment, decided_at, email_sent_at, reminder_sent_at,
+      approver_id,
+      approval_requests(
+        id, type, reference_id, requester_id, status, current_step, total_steps, created_at,
+        requester:profiles!approval_requests_requester_id_fkey(first_name, last_name, email)
+      )
+    `)
+    .eq("id", stepId)
+    .eq("approver_id", user.id)
+    .single();
+
+  if (!step) return null;
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const request = step.approval_requests as any;
+  if (!request) return null;
+
+  // Fetch all steps for the timeline
+  const { data: allSteps } = await supabase
+    .from("approval_steps")
+    .select(`
+      id, step_order, status, comment, decided_at, reminder_sent_at,
+      approver:profiles!approval_steps_approver_id_fkey(first_name, last_name, email)
+    `)
+    .eq("approval_request_id", request.id)
+    .order("step_order", { ascending: true });
+
+  // Fetch reference details based on type
+  let referenceDetails = null;
+  if (request.type === "manual_clock") {
+    const { data } = await supabase
+      .from("clock_entries")
+      .select("*")
+      .eq("id", request.reference_id)
+      .single();
+    referenceDetails = data;
+  } else if (request.type === "leave_request" || request.type === "leave_cancellation") {
+    const { data } = await supabase
+      .from("leave_requests")
+      .select("*, leave_types(name, code)")
+      .eq("id", request.reference_id)
+      .single();
+    referenceDetails = data;
+  } else if (request.type === "overtime") {
+    const { data } = await supabase
+      .from("overtime_requests")
+      .select("*")
+      .eq("id", request.reference_id)
+      .single();
+    referenceDetails = data;
+  }
+
+  return {
+    step,
+    request,
+    allSteps: allSteps ?? [],
+    referenceDetails,
+  };
+}
+
+/**
  * Get approval request details by token (for public approval page).
  */
 export async function getApprovalByToken(token: string) {

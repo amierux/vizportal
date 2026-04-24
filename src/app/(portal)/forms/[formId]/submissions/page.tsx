@@ -5,6 +5,8 @@ import { getFormSubmissions } from "@/lib/actions/form-submissions";
 import { SubmissionsTable } from "@/components/forms/submissions-table";
 import type { RoleName } from "@/types";
 
+export const dynamic = "force-dynamic";
+
 type Params = Promise<{ formId: string }>;
 
 const ADMIN_ROLES: RoleName[] = ["admin", "hr"];
@@ -40,7 +42,7 @@ export default async function FormSubmissionsPage({ params }: { params: Params }
   if (!form) notFound();
 
   return (
-    <div className="animate-fade-in-up space-y-4">
+    <div className="space-y-4">
       <div>
         <h1 className="text-2xl font-bold">Submissions — {form.name}</h1>
         <p className="mt-1 text-sm text-muted-foreground">

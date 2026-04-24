@@ -1,10 +1,11 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { getUserProfile, getUserRoles } from "@/lib/actions/helpers";
 import { Sidebar } from "@/components/layout/sidebar";
 import { BottomTabs } from "@/components/layout/bottom-tabs";
 import { Header } from "@/components/layout/header";
 import { formatFullName } from "@/lib/utils/format";
-import type { RoleName } from "@/types";
+import { PageTransition } from "@/components/shared/page-transition";
 
 export default async function PortalLayout({
   children,
@@ -12,7 +13,6 @@ export default async function PortalLayout({
   children: React.ReactNode;
 }) {
   const supabase = await createClient();
-
   const {
     data: { user },
   } = await supabase.auth.getUser();
@@ -21,11 +21,10 @@ export default async function PortalLayout({
     redirect("/login");
   }
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("*")
-    .eq("id", user.id)
-    .single();
+  const [profile, roles] = await Promise.all([
+    getUserProfile(),
+    getUserRoles(),
+  ]);
 
   if (!profile) {
     redirect("/login");
@@ -35,14 +34,24 @@ export default async function PortalLayout({
     redirect("/complete-profile");
   }
 
-  const { data: userRoles } = await supabase
-    .from("user_roles")
-    .select("role_id, roles(name)")
-    .eq("profile_id", user.id);
+  // Fetch workspace folders and their lists for sidebar
+  const { data: rawFolders } = await supabase
+    .from("workspace_folders")
+    .select("id, name")
+    .eq("company_id", profile.company_id)
+    .eq("is_archived", false)
+    .order("name");
 
-  const roles: RoleName[] = (userRoles ?? []).map(
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (ur: any) => ur.roles.name as RoleName
+  const foldersWithLists = await Promise.all(
+    (rawFolders ?? []).map(async (folder) => {
+      const { data: lists } = await supabase
+        .from("workspace_lists")
+        .select("id, name")
+        .eq("folder_id", folder.id)
+        .eq("is_archived", false)
+        .order("name");
+      return { id: folder.id, name: folder.name, workspace_lists: lists ?? [] };
+    })
   );
 
   const userName = formatFullName(profile.first_name, profile.last_name);
@@ -53,11 +62,14 @@ export default async function PortalLayout({
         userRoles={roles}
         userName={userName}
         avatarUrl={profile.avatar_url}
+        workspaceFolders={foldersWithLists}
       />
       <div className="flex flex-1 flex-col overflow-hidden">
         <Header userRoles={roles} />
         <main className="flex-1 overflow-y-auto p-4 pb-20 md:p-6 md:pb-6">
-          {children}
+          <PageTransition>
+            {children}
+          </PageTransition>
         </main>
       </div>
       <BottomTabs userRoles={roles} />

@@ -371,28 +371,36 @@ export async function getLeaveRequests(filters: {
   leaveTypeId?: string;
   startDate?: string;
   endDate?: string;
+  page?: number;
+  perPage?: number;
 }) {
   const supabase = await createClient();
+  const page = filters.page ?? 1;
+  const perPage = filters.perPage ?? 25;
+  const from = (page - 1) * perPage;
+  const to = from + perPage - 1;
 
   let query = supabase
     .from("leave_requests")
     .select(
       `
-      *,
+      id, status, start_date, end_date, total_days, reason, is_half_day, created_at,
       leave_types(name, code),
       profiles:profile_id(id, first_name, last_name,
         employee_details(department_id, departments(name))
       )
-    `
+    `,
+      { count: "exact" }
     )
-    .order("created_at", { ascending: false });
+    .order("created_at", { ascending: false })
+    .range(from, to);
 
   if (filters.status) query = query.eq("status", filters.status as "pending" | "approved" | "rejected" | "cancelled");
   if (filters.leaveTypeId) query = query.eq("leave_type_id", filters.leaveTypeId);
   if (filters.startDate) query = query.gte("start_date", filters.startDate);
   if (filters.endDate) query = query.lte("end_date", filters.endDate);
 
-  const { data } = await query;
+  const { data, count } = await query;
 
   let filtered = data ?? [];
   if (filters.departmentId) {
@@ -402,7 +410,7 @@ export async function getLeaveRequests(filters: {
     });
   }
 
-  return filtered;
+  return { data: filtered, count: count ?? 0 };
 }
 
 /**
@@ -411,22 +419,30 @@ export async function getLeaveRequests(filters: {
 export async function getAllLeaveBalances(filters: {
   year?: number;
   departmentId?: string;
+  page?: number;
+  perPage?: number;
 }) {
   const supabase = await createClient();
   const year = filters.year ?? new Date().getFullYear();
+  const page = filters.page ?? 1;
+  const perPage = filters.perPage ?? 25;
+  const from = (page - 1) * perPage;
+  const to = from + perPage - 1;
 
-  const { data } = await supabase
+  const { data, count } = await supabase
     .from("leave_balances")
     .select(
       `
-      *,
+      id, total_days, used_days, remaining_days,
       leave_types(name, code),
       profiles:profile_id(id, first_name, last_name,
         employee_details(department_id, departments(name))
       )
-    `
+    `,
+      { count: "exact" }
     )
-    .eq("year", year);
+    .eq("year", year)
+    .range(from, to);
 
   let filtered = data ?? [];
   if (filters.departmentId) {
@@ -436,7 +452,7 @@ export async function getAllLeaveBalances(filters: {
     });
   }
 
-  return filtered;
+  return { data: filtered, count: count ?? 0 };
 }
 
 /**

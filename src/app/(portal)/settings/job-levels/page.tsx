@@ -1,6 +1,8 @@
 import { createClient } from "@/lib/supabase/server";
 import { JobLevelTable } from "@/components/settings/job-level-table";
 
+export const dynamic = "force-dynamic";
+
 export default async function JobLevelsPage() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -16,7 +18,7 @@ export default async function JobLevelsPage() {
     .order("rank");
 
   return (
-    <div className="animate-fade-in-up">
+    <div>
       <JobLevelTable jobLevels={jobLevels ?? []} />
     </div>
   );

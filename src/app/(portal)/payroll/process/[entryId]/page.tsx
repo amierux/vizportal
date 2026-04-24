@@ -8,6 +8,8 @@ import { formatFullName, formatDate } from "@/lib/utils/format";
 import { notFound } from "next/navigation";
 import { cn } from "@/lib/utils";
 
+export const dynamic = "force-dynamic";
+
 type PageProps = { params: Promise<{ entryId: string }> };
 
 export default async function PayrollEntryPage({ params }: PageProps) {
@@ -26,7 +28,7 @@ export default async function PayrollEntryPage({ params }: PageProps) {
   );
 
   return (
-    <div className="space-y-6 animate-fade-in-up">
+    <div className="space-y-6">
       <div className="flex items-center gap-3">
         <Link
           href="/payroll/process"

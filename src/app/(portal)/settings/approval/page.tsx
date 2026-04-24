@@ -4,6 +4,8 @@ import { ApprovalSettingsForm } from "@/components/settings/approval-settings-fo
 import { ApprovalChainEditor } from "@/components/settings/approval-chain-editor";
 import { Separator } from "@/components/ui/separator";
 
+export const dynamic = "force-dynamic";
+
 export default async function ApprovalSettingsPage() {
   const [settings, configs] = await Promise.all([
     getSystemSettings(),
@@ -11,7 +13,7 @@ export default async function ApprovalSettingsPage() {
   ]);
 
   return (
-    <div className="mx-auto max-w-2xl space-y-6 animate-fade-in-up">
+    <div className="mx-auto max-w-2xl space-y-6">
       <h1 className="text-2xl font-bold">Approval Settings</h1>
       {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
       <ApprovalChainEditor configs={configs as any} />

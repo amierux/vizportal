@@ -1,7 +1,5 @@
 "use client";
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-
 type Props = {
   data: { loggedMinutes: number; requiredMinutes: number };
 };
@@ -22,11 +20,11 @@ export function TimesheetWeekWidget({ data }: Props) {
         : "bg-red-500";
 
   return (
-    <Card className="card-hover">
-      <CardHeader className="pb-2">
-        <CardTitle className="text-sm font-medium text-muted-foreground">Timesheet This Week</CardTitle>
-      </CardHeader>
-      <CardContent>
+    <div>
+      <div className="pb-2">
+        <p className="text-sm font-medium text-muted-foreground">Timesheet This Week</p>
+      </div>
+      <div>
         <div className="text-2xl font-bold">
           {loggedHrs} <span className="text-base font-normal text-muted-foreground">/ {requiredHrs} hrs</span>
         </div>
@@ -37,7 +35,7 @@ export function TimesheetWeekWidget({ data }: Props) {
           />
         </div>
         <div className="mt-1 text-xs text-muted-foreground">{percentage}% logged</div>
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }

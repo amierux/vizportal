@@ -1,6 +1,8 @@
 import { createClient } from "@/lib/supabase/server";
 import { InvitationForm } from "@/components/settings/invitation-form";
 
+export const dynamic = "force-dynamic";
+
 export default async function InvitationsPage() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -34,7 +36,7 @@ export default async function InvitationsPage() {
   ]);
 
   return (
-    <div className="animate-fade-in-up">
+    <div>
       <InvitationForm
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         invitations={(invitations.data as any) ?? []}

@@ -1,6 +1,5 @@
 "use client";
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   BarChart,
   Bar,
@@ -19,11 +18,11 @@ type Props = {
 
 export function TeamTaskProgressWidget({ data }: Props) {
   return (
-    <Card className="card-hover">
-      <CardHeader className="pb-2">
-        <CardTitle className="text-sm font-medium text-muted-foreground">Team Task Progress</CardTitle>
-      </CardHeader>
-      <CardContent>
+    <div>
+      <div className="pb-2">
+        <p className="text-sm font-medium text-muted-foreground">Team Task Progress</p>
+      </div>
+      <div>
         {data.length === 0 ? (
           <p className="text-sm text-muted-foreground">No data yet.</p>
         ) : (
@@ -37,7 +36,7 @@ export function TeamTaskProgressWidget({ data }: Props) {
             </BarChart>
           </ResponsiveContainer>
         )}
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }

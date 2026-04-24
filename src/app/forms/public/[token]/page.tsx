@@ -4,6 +4,8 @@ import { getFormByPublicToken } from "@/lib/actions/forms";
 import { FormRenderer } from "@/components/forms/form-renderer";
 import Image from "next/image";
 
+export const dynamic = "force-dynamic";
+
 type Params = Promise<{ token: string }>;
 
 export default async function PublicFormPage({ params }: { params: Params }) {

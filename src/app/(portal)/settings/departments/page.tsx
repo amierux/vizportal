@@ -2,6 +2,8 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { DepartmentList } from "@/components/company/department-list";
 
+export const dynamic = "force-dynamic";
+
 export default async function DepartmentsSettingsPage() {
   const supabase = await createClient();
 
@@ -31,7 +33,7 @@ export default async function DepartmentsSettingsPage() {
     .order("first_name");
 
   return (
-    <div className="mx-auto max-w-3xl space-y-6 animate-fade-in-up">
+    <div className="mx-auto max-w-3xl space-y-6">
       <h1 className="text-2xl font-bold">Departments</h1>
       <DepartmentList departments={departments ?? []} members={members ?? []} />
     </div>

@@ -1,7 +1,10 @@
 import { createClient } from "@/lib/supabase/server";
 import { getAttendanceSummaries } from "@/lib/actions/attendance";
-import { AttendanceTable } from "@/components/attendance/attendance-table";
 import { SGT_TIMEZONE } from "@/lib/constants";
+import { fetchAttendanceAnalytics } from "@/lib/actions/analytics";
+import { AttendanceManageClient } from "@/components/attendance/attendance-manage-client";
+
+export const dynamic = "force-dynamic";
 
 type SearchParams = Promise<{ [key: string]: string | undefined }>;
 
@@ -18,8 +21,7 @@ export default async function AttendanceManagePage({
   const status = params.status ?? "";
   const page = Number(params.page) || 1;
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const { data, count } = await getAttendanceSummaries({
+  const { data } = await getAttendanceSummaries({
     date,
     departmentId: departmentId || undefined,
     status: status || undefined,
@@ -37,18 +39,21 @@ export default async function AttendanceManagePage({
     .eq("id", user!.id)
     .single();
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { data: departments } = await supabase
     .from("departments")
     .select("id, name")
     .eq("company_id", profile!.company_id)
     .order("name");
 
+  const analyticsData = await fetchAttendanceAnalytics();
+
   return (
-    <div className="space-y-6">
-      <h1 className="text-2xl font-bold">Attendance Management</h1>
-      {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-      <AttendanceTable rows={data as any} />
-    </div>
+    <AttendanceManageClient
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      initialRows={(data as any) ?? []}
+      initialDate={date}
+      departments={departments ?? []}
+      analyticsData={analyticsData}
+    />
   );
 }

@@ -3,6 +3,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { getCompanyId, getUserId, getDateRange } from "@/lib/actions/helpers";
 import type { RoleName } from "@/types";
 
 // ---------------------------------------------------------------------------
@@ -11,15 +12,13 @@ import type { RoleName } from "@/types";
 
 export async function getMyWidgets() {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return [];
+  const userId = await getUserId();
+  if (!userId) return [];
 
   const { data } = await supabase
     .from("dashboard_widgets")
     .select("*")
-    .eq("profile_id", user.id)
+    .eq("profile_id", userId)
     .order("position");
   return data ?? [];
 }
@@ -29,30 +28,23 @@ export async function addWidget(
   size: "small" | "medium" | "large",
 ) {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return { error: "Not authenticated" };
+  const userId = await getUserId();
+  if (!userId) return { error: "Not authenticated" };
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("company_id")
-    .eq("id", user.id)
-    .single();
-  if (!profile) return { error: "Profile not found" };
+  const companyId = await getCompanyId();
+  if (!companyId) return { error: "Company not found" };
 
-  // Get next position
   const { data: existing } = await supabase
     .from("dashboard_widgets")
     .select("position")
-    .eq("profile_id", user.id)
+    .eq("profile_id", userId)
     .order("position", { ascending: false })
     .limit(1);
   const nextPosition = (existing?.[0]?.position ?? -1) + 1;
 
   const { error } = await supabase.from("dashboard_widgets").insert({
-    profile_id: user.id,
-    company_id: profile.company_id,
+    profile_id: userId,
+    company_id: companyId,
     widget_type: widgetType,
     position: nextPosition,
     size,
@@ -127,23 +119,17 @@ const DEFAULT_WIDGETS: Record<
 
 export async function seedDefaultWidgets(roles: RoleName[]) {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return { error: "Not authenticated" };
+  const userId = await getUserId();
+  if (!userId) return { error: "Not authenticated" };
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("company_id")
-    .eq("id", user.id)
-    .single();
-  if (!profile) return { error: "Profile not found" };
+  const companyId = await getCompanyId();
+  if (!companyId) return { error: "Profile not found" };
 
   // Check if user already has widgets
   const { data: existing } = await supabase
     .from("dashboard_widgets")
     .select("id")
-    .eq("profile_id", user.id)
+    .eq("profile_id", userId)
     .limit(1);
   if (existing && existing.length > 0) return { success: true, seeded: false };
 
@@ -161,8 +147,8 @@ export async function seedDefaultWidgets(roles: RoleName[]) {
 
   for (let i = 0; i < widgetsToAdd.length; i++) {
     await supabase.from("dashboard_widgets").insert({
-      profile_id: user.id,
-      company_id: profile.company_id,
+      profile_id: userId,
+      company_id: companyId,
       widget_type: widgetsToAdd[i].type,
       position: i,
       size: widgetsToAdd[i].size,
@@ -185,32 +171,27 @@ export async function fetchAttendanceToday(): Promise<{
   companyAbsent: number;
 }> {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user)
+  const userId = await getUserId();
+  if (!userId)
     return { myStatus: null, companyPresent: 0, companyLate: 0, companyAbsent: 0 };
+
+  const companyId = await getCompanyId();
 
   const today = new Date().toISOString().split("T")[0];
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("company_id")
-    .eq("id", user.id)
-    .single();
-
-  const { data: myRow } = await supabase
-    .from("daily_attendance_summary")
-    .select("status")
-    .eq("profile_id", user.id)
-    .eq("date", today)
-    .maybeSingle();
-
-  const { data: companyRows } = await supabase
-    .from("daily_attendance_summary")
-    .select("status")
-    .eq("company_id", profile?.company_id ?? "")
-    .eq("date", today);
+  const [{ data: myRow }, { data: companyRows }] = await Promise.all([
+    supabase
+      .from("daily_attendance_summary")
+      .select("status")
+      .eq("profile_id", userId)
+      .eq("date", today)
+      .maybeSingle(),
+    supabase
+      .from("daily_attendance_summary")
+      .select("status")
+      .eq("company_id", companyId!)
+      .eq("date", today),
+  ]);
 
   const rows = companyRows ?? [];
   const companyPresent = rows.filter((r: any) => r.status === "present").length;
@@ -230,45 +211,35 @@ export async function fetchAttendanceToday(): Promise<{
 /** 2. Late Count Month — count of late days this month for current user */
 export async function fetchLateCountMonth(): Promise<{ count: number }> {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return { count: 0 };
+  const userId = await getUserId();
+  if (!userId) return { count: 0 };
 
-  const now = new Date();
-  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
-    .toISOString()
-    .split("T")[0];
+  const { start } = getDateRange("this_month");
 
-  const { data } = await supabase
+  const { count } = await supabase
     .from("daily_attendance_summary")
-    .select("id")
-    .eq("profile_id", user.id)
+    .select("id", { count: "exact", head: true })
+    .eq("profile_id", userId)
     .eq("is_late", true)
-    .gte("date", startOfMonth);
+    .gte("date", start);
 
-  return { count: data?.length ?? 0 };
+  return { count: count ?? 0 };
 }
 
 /** 3. Overtime Month — total approved OT hours this month */
 export async function fetchOvertimeMonth(): Promise<{ hours: number }> {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return { hours: 0 };
+  const userId = await getUserId();
+  if (!userId) return { hours: 0 };
 
-  const now = new Date();
-  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
-    .toISOString()
-    .split("T")[0];
+  const { start } = getDateRange("this_month");
 
   const { data } = await supabase
     .from("overtime_requests")
     .select("total_hours")
-    .eq("profile_id", user.id)
+    .eq("profile_id", userId)
     .eq("status", "approved")
-    .gte("date", startOfMonth);
+    .gte("date", start);
 
   const hours = (data ?? []).reduce(
     (sum: number, r: any) => sum + (r.total_hours ?? 0),
@@ -284,15 +255,13 @@ export async function fetchMyTasksSummary(): Promise<{
   done: number;
 }> {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return { todo: 0, inProgress: 0, done: 0 };
+  const userId = await getUserId();
+  if (!userId) return { todo: 0, inProgress: 0, done: 0 };
 
   const { data } = await supabase
     .from("workspace_tasks")
     .select("completed_at, workspace_folder_statuses!status_id(is_done)")
-    .eq("assignee_id", user.id);
+    .eq("assignee_id", userId);
 
   let todo = 0;
   let inProgress = 0;
@@ -316,17 +285,15 @@ export async function fetchMyTasksSummary(): Promise<{
 /** 5. Overdue Tasks — count of tasks past target_end_date and not done */
 export async function fetchOverdueTasks(): Promise<{ count: number }> {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return { count: 0 };
+  const userId = await getUserId();
+  if (!userId) return { count: 0 };
 
   const today = new Date().toISOString().split("T")[0];
 
   const { data } = await supabase
     .from("workspace_tasks")
     .select("id, workspace_folder_statuses!status_id(is_done)")
-    .eq("assignee_id", user.id)
+    .eq("assignee_id", userId)
     .lt("target_end_date", today)
     .not("target_end_date", "is", null);
 
@@ -345,10 +312,8 @@ export async function fetchTimesheetWeek(): Promise<{
   requiredMinutes: number;
 }> {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return { loggedMinutes: 0, requiredMinutes: 0 };
+  const userId = await getUserId();
+  if (!userId) return { loggedMinutes: 0, requiredMinutes: 0 };
 
   const now = new Date();
   const day = now.getDay();
@@ -364,13 +329,13 @@ export async function fetchTimesheetWeek(): Promise<{
     supabase
       .from("workspace_time_entries")
       .select("duration_minutes")
-      .eq("profile_id", user.id)
+      .eq("profile_id", userId)
       .gte("date", weekStart)
       .lte("date", weekEnd),
     supabase
       .from("employee_details")
       .select("weekly_required_hours")
-      .eq("profile_id", user.id)
+      .eq("profile_id", userId)
       .maybeSingle(),
   ]);
 
@@ -386,15 +351,13 @@ export async function fetchTimesheetWeek(): Promise<{
 /** 7. Pending Approvals — count of approval steps pending for current user */
 export async function fetchPendingApprovals(): Promise<{ count: number }> {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return { count: 0 };
+  const userId = await getUserId();
+  if (!userId) return { count: 0 };
 
   const { data } = await supabase
     .from("approval_steps")
     .select("id")
-    .eq("approver_id", user.id)
+    .eq("approver_id", userId)
     .eq("status", "pending");
 
   return { count: data?.length ?? 0 };
@@ -403,15 +366,13 @@ export async function fetchPendingApprovals(): Promise<{ count: number }> {
 /** 8. Pending Forms — count of assigned forms not completed */
 export async function fetchPendingForms(): Promise<{ count: number }> {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return { count: 0 };
+  const userId = await getUserId();
+  if (!userId) return { count: 0 };
 
   const { data } = await supabase
     .from("form_assignments")
     .select("id")
-    .eq("profile_id", user.id)
+    .eq("profile_id", userId)
     .eq("completed", false);
 
   return { count: data?.length ?? 0 };
@@ -422,17 +383,15 @@ export async function fetchLeaveBalances(): Promise<
   Array<{ code: string; name: string; remaining: number; total: number }>
 > {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return [];
+  const userId = await getUserId();
+  if (!userId) return [];
 
   const currentYear = new Date().getFullYear();
 
   const { data } = await supabase
     .from("leave_balances")
     .select("remaining_days, total_days, leave_types(code, name)")
-    .eq("profile_id", user.id)
+    .eq("profile_id", userId)
     .eq("year", currentYear)
     .eq("is_disabled", false);
 
@@ -454,16 +413,10 @@ export async function fetchUpcomingLeaves(): Promise<
   }>
 > {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return [];
+  const userId = await getUserId();
+  if (!userId) return [];
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("company_id")
-    .eq("id", user.id)
-    .single();
+  const companyId = await getCompanyId();
 
   const today = new Date().toISOString().split("T")[0];
 
@@ -472,7 +425,7 @@ export async function fetchUpcomingLeaves(): Promise<
     .select(
       "start_date, end_date, profiles(first_name, last_name), leave_types(name)",
     )
-    .eq("company_id", profile?.company_id ?? "")
+    .eq("company_id", companyId ?? "")
     .eq("status", "approved")
     .gte("start_date", today)
     .order("start_date")
@@ -494,17 +447,15 @@ export async function fetchPayrollSummary(): Promise<{
   periodEnd: string;
 } | null> {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return null;
+  const userId = await getUserId();
+  if (!userId) return null;
 
   const { data } = await supabase
     .from("payroll_entries")
     .select(
       "gross_pay, net_pay, payroll_periods(period_start, period_end)",
     )
-    .eq("profile_id", user.id)
+    .eq("profile_id", userId)
     .order("created_at", { ascending: false })
     .limit(1)
     .maybeSingle();
@@ -527,21 +478,16 @@ export async function fetchAttendanceRateMonth(): Promise<{
   absent: number;
 }> {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return { present: 0, late: 0, absent: 0 };
+  const userId = await getUserId();
+  if (!userId) return { present: 0, late: 0, absent: 0 };
 
-  const now = new Date();
-  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
-    .toISOString()
-    .split("T")[0];
+  const { start } = getDateRange("this_month");
 
   const { data } = await supabase
     .from("daily_attendance_summary")
     .select("status")
-    .eq("profile_id", user.id)
-    .gte("date", startOfMonth);
+    .eq("profile_id", userId)
+    .gte("date", start);
 
   const rows = data ?? [];
   const total = rows.length;
@@ -563,23 +509,17 @@ export async function fetchLeaveUsageType(): Promise<
   Array<{ name: string; count: number; color: string }>
 > {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return [];
+  const userId = await getUserId();
+  if (!userId) return [];
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("company_id")
-    .eq("id", user.id)
-    .single();
+  const companyId = await getCompanyId();
 
-  const startOfYear = `${new Date().getFullYear()}-01-01`;
+  const { start: startOfYear } = getDateRange("this_year");
 
   const { data } = await supabase
     .from("leave_requests")
     .select("leave_types(name, color)")
-    .eq("company_id", profile?.company_id ?? "")
+    .eq("company_id", companyId ?? "")
     .eq("status", "approved")
     .gte("start_date", startOfYear);
 
@@ -603,21 +543,15 @@ export async function fetchTaskCompletionRate(): Promise<{
   pending: number;
 }> {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return { completed: 0, pending: 0 };
+  const userId = await getUserId();
+  if (!userId) return { completed: 0, pending: 0 };
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("company_id")
-    .eq("id", user.id)
-    .single();
+  const companyId = await getCompanyId();
 
   const { data } = await supabase
     .from("workspace_tasks")
     .select("workspace_folder_statuses!status_id(is_done)")
-    .eq("company_id", profile?.company_id ?? "");
+    .eq("company_id", companyId ?? "");
 
   let completed = 0;
   let pending = 0;
@@ -641,24 +575,19 @@ export async function fetchTeamTaskProgress(): Promise<
   }>
 > {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return [];
+  const userId = await getUserId();
+  if (!userId) return [];
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("company_id")
-    .eq("id", user.id)
-    .single();
+  const companyId = await getCompanyId();
 
   const { data } = await supabase
     .from("workspace_tasks")
     .select(
       "assignee_id, profiles!assignee_id(first_name, last_name), workspace_folder_statuses!status_id(is_done)",
     )
-    .eq("company_id", profile?.company_id ?? "")
-    .not("assignee_id", "is", null);
+    .eq("company_id", companyId ?? "")
+    .not("assignee_id", "is", null)
+    .limit(1000);
 
   const memberMap: Record<
     string,
@@ -694,21 +623,15 @@ export async function fetchHeadcountDepartment(): Promise<
   Array<{ name: string; count: number }>
 > {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return [];
+  const userId = await getUserId();
+  if (!userId) return [];
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("company_id")
-    .eq("id", user.id)
-    .single();
+  const companyId = await getCompanyId();
 
   const { data } = await supabase
     .from("employee_details")
     .select("department_id, departments!department_id(name)")
-    .eq("company_id", profile?.company_id ?? "");
+    .eq("company_id", companyId ?? "");
 
   const deptMap: Record<string, { name: string; count: number }> = {};
   for (const row of data ?? []) {
@@ -728,26 +651,17 @@ export async function fetchAttendanceTrend(): Promise<
   Array<{ date: string; rate: number }>
 > {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return [];
+  const userId = await getUserId();
+  if (!userId) return [];
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("company_id")
-    .eq("id", user.id)
-    .single();
+  const companyId = await getCompanyId();
 
-  const thirtyDaysAgo = new Date();
-  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 29);
-  const startDate = thirtyDaysAgo.toISOString().split("T")[0];
-  const today = new Date().toISOString().split("T")[0];
+  const { start: startDate, end: today } = getDateRange("last_30_days");
 
   const { data } = await supabase
     .from("daily_attendance_summary")
     .select("date, status")
-    .eq("company_id", profile?.company_id ?? "")
+    .eq("company_id", companyId ?? "")
     .gte("date", startDate)
     .lte("date", today)
     .order("date");
@@ -777,23 +691,17 @@ export async function fetchPayrollCostTrend(): Promise<
   Array<{ period: string; netPay: number }>
 > {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return [];
+  const userId = await getUserId();
+  if (!userId) return [];
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("company_id")
-    .eq("id", user.id)
-    .single();
+  const companyId = await getCompanyId();
 
   const { data } = await supabase
     .from("payroll_entries")
     .select("net_pay, payroll_periods!payroll_period_id(period_start, pay_date)")
-    .eq("company_id", profile?.company_id ?? "")
+    .eq("company_id", companyId ?? "")
     .order("created_at", { ascending: false })
-    .limit(500);
+    .limit(200);
 
   // Group by period
   const periodMap: Record<string, { netPay: number; payDate: string }> = {};
@@ -822,35 +730,41 @@ export async function fetchDepartmentComparison(): Promise<
   }>
 > {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return [];
+  const companyId = await getCompanyId();
+  if (!companyId) return [];
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("company_id")
-    .eq("id", user.id)
-    .single();
+  const { start: startOfMonth } = getDateRange("this_month");
 
-  const now = new Date();
-  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
-    .toISOString()
-    .split("T")[0];
-
-  // Fetch departments
-  const { data: depts } = await supabase
-    .from("departments")
-    .select("id, name")
-    .eq("company_id", profile?.company_id ?? "");
+  // Fetch departments, employee_details, attendance, and tasks in parallel
+  const [
+    { data: depts },
+    { data: empDetails },
+    { data: attendance },
+    { data: tasks },
+  ] = await Promise.all([
+    supabase
+      .from("departments")
+      .select("id, name")
+      .eq("company_id", companyId),
+    supabase
+      .from("employee_details")
+      .select("profile_id, department_id")
+      .eq("company_id", companyId),
+    supabase
+      .from("daily_attendance_summary")
+      .select("profile_id, status")
+      .eq("company_id", companyId)
+      .gte("date", startOfMonth),
+    supabase
+      .from("workspace_tasks")
+      .select(
+        "assignee_id, workspace_folder_statuses!status_id(is_done)",
+      )
+      .eq("company_id", companyId)
+      .not("assignee_id", "is", null),
+  ]);
 
   if (!depts || depts.length === 0) return [];
-
-  // Fetch employee_details to map profiles to departments
-  const { data: empDetails } = await supabase
-    .from("employee_details")
-    .select("profile_id, department_id")
-    .eq("company_id", profile?.company_id ?? "");
 
   const profileToDept: Record<string, string> = {};
   for (const e of empDetails ?? []) {
@@ -858,22 +772,6 @@ export async function fetchDepartmentComparison(): Promise<
       profileToDept[(e as any).profile_id] = (e as any).department_id;
     }
   }
-
-  // Fetch attendance this month
-  const { data: attendance } = await supabase
-    .from("daily_attendance_summary")
-    .select("profile_id, status")
-    .eq("company_id", profile?.company_id ?? "")
-    .gte("date", startOfMonth);
-
-  // Fetch tasks
-  const { data: tasks } = await supabase
-    .from("workspace_tasks")
-    .select(
-      "assignee_id, workspace_folder_statuses!status_id(is_done)",
-    )
-    .eq("company_id", profile?.company_id ?? "")
-    .not("assignee_id", "is", null);
 
   // Build dept stats
   const deptStats: Record<
@@ -946,17 +844,11 @@ export async function fetchOutOfOffice(): Promise<{
   holidays: Array<{ name: string; date: string }>;
 }> {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return { onLeave: [], holidays: [] };
+  const userId = await getUserId();
+  if (!userId) return { onLeave: [], holidays: [] };
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("company_id")
-    .eq("id", user.id)
-    .single();
-  const companyId = profile?.company_id ?? "";
+  const companyId = await getCompanyId();
+  const companyIdVal = companyId ?? "";
 
   const today = new Date().toISOString().split("T")[0];
   const in60 = new Date();
@@ -969,7 +861,7 @@ export async function fetchOutOfOffice(): Promise<{
     .select(
       "start_date, end_date, start_half, end_half, profiles(first_name, last_name), leave_types(name)",
     )
-    .eq("company_id", companyId)
+    .eq("company_id", companyIdVal)
     .eq("status", "approved")
     .lte("start_date", today)
     .gte("end_date", today)
@@ -979,7 +871,7 @@ export async function fetchOutOfOffice(): Promise<{
   const { data: holidays } = await supabase
     .from("non_working_days")
     .select("name, date")
-    .eq("company_id", companyId)
+    .eq("company_id", companyIdVal)
     .gte("date", today)
     .lte("date", horizon)
     .order("date")

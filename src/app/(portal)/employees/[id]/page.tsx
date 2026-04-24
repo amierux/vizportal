@@ -11,6 +11,8 @@ import { getRecurringDeductions, getCustomDeductionTypes } from "@/lib/actions/p
 import { formatFullName } from "@/lib/utils/format";
 import type { RoleName } from "@/types";
 
+export const dynamic = "force-dynamic";
+
 type Params = Promise<{ id: string }>;
 
 export default async function EmployeeDetailPage({
@@ -98,7 +100,7 @@ export default async function EmployeeDetailPage({
     : [[], []];
 
   return (
-    <div className="mx-auto max-w-3xl animate-fade-in-up">
+    <div className="mx-auto max-w-3xl">
       <h2 className="mb-6 text-xl font-semibold">
         {formatFullName(employee.first_name, employee.last_name)}
       </h2>

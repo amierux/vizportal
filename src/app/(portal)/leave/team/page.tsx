@@ -1,6 +1,8 @@
 import { getTeamLeaves } from "@/lib/actions/leave";
 import { LeaveCalendar } from "@/components/leave/leave-calendar";
 
+export const dynamic = "force-dynamic";
+
 export default async function TeamLeavePage() {
   // Show 3 months: previous, current, next
   const now = new Date();

@@ -4,6 +4,8 @@ import { PayrollSettingsForm } from "@/components/settings/payroll-settings-form
 import { CustomDeductionTypesTable } from "@/components/settings/custom-deduction-types-table";
 import { ContributionTablesEditor } from "@/components/settings/contribution-tables-editor";
 
+export const dynamic = "force-dynamic";
+
 export default async function PayrollSettingsPage() {
   const [settings, deductionTypes, sssBrackets, philhealthBrackets, pagibigBrackets, taxBrackets] =
     await Promise.all([
@@ -16,7 +18,7 @@ export default async function PayrollSettingsPage() {
     ]);
 
   return (
-    <div className="mx-auto max-w-3xl space-y-8 animate-fade-in-up">
+    <div className="mx-auto max-w-3xl space-y-8">
       <h1 className="text-2xl font-bold">Payroll Settings</h1>
       <PayrollSettingsForm settings={settings} />
       <CustomDeductionTypesTable types={deductionTypes} />

@@ -1,13 +1,17 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { fetchEmployeeAnalytics } from "@/lib/actions/analytics";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { EmployeeTable } from "@/components/employees/employee-table";
+import { EmployeeAnalytics } from "@/components/employees/employee-analytics";
 import { PersonalInfoTab } from "@/components/employees/personal-info-tab";
 import { EmploymentTab } from "@/components/employees/employment-tab";
 import { DocumentsTab } from "@/components/employees/documents-tab";
 import { EMPLOYEES_PER_PAGE } from "@/lib/constants";
 import { formatFullName } from "@/lib/utils/format";
 import type { RoleName } from "@/types";
+
+export const dynamic = "force-dynamic";
 
 type SearchParams = Promise<{ [key: string]: string | undefined }>;
 
@@ -140,8 +144,11 @@ export default async function EmployeesPage({
     totalCount = count ?? 0;
   }
 
+  const analyticsData = canSeeAllMembers ? await fetchEmployeeAnalytics() : null;
+
   return (
-    <div className="animate-fade-in-up">
+    <div>
+      <EmployeeAnalytics data={analyticsData} />
       <Tabs defaultValue={defaultTab} className="space-y-4">
         <TabsList>
           <TabsTrigger value="my-profile">My Profile</TabsTrigger>

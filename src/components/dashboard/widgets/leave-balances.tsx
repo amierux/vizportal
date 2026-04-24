@@ -1,7 +1,5 @@
 "use client";
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-
 type LeaveBalance = { code: string; name: string; remaining: number; total: number };
 
 type Props = {
@@ -10,11 +8,11 @@ type Props = {
 
 export function LeaveBalancesWidget({ data }: Props) {
   return (
-    <Card className="card-hover">
-      <CardHeader className="pb-2">
-        <CardTitle className="text-sm font-medium text-muted-foreground">Leave Balances</CardTitle>
-      </CardHeader>
-      <CardContent>
+    <div>
+      <div className="pb-2">
+        <p className="text-sm font-medium text-muted-foreground">Leave Balances</p>
+      </div>
+      <div>
         {data.length === 0 ? (
           <p className="text-sm text-muted-foreground">No leave balances found.</p>
         ) : (
@@ -39,7 +37,7 @@ export function LeaveBalancesWidget({ data }: Props) {
             })}
           </div>
         )}
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }

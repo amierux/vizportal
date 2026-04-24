@@ -1,9 +1,11 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Info } from "lucide-react";
 
+export const dynamic = "force-dynamic";
+
 export default async function FormsSettingsPage() {
   return (
-    <div className="mx-auto max-w-2xl space-y-6 animate-fade-in-up">
+    <div className="mx-auto max-w-2xl space-y-6">
       <h1 className="text-2xl font-bold">Form Settings</h1>
       <Card>
         <CardHeader>

@@ -1,18 +1,16 @@
 "use client";
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-
 type Props = {
   data: { count: number };
 };
 
 export function OverdueTasksWidget({ data }: Props) {
   return (
-    <Card className="card-hover">
-      <CardHeader className="pb-2">
-        <CardTitle className="text-sm font-medium text-muted-foreground">Overdue Tasks</CardTitle>
-      </CardHeader>
-      <CardContent>
+    <div>
+      <div className="pb-2">
+        <p className="text-sm font-medium text-muted-foreground">Overdue Tasks</p>
+      </div>
+      <div>
         {data.count === 0 ? (
           <div className="text-2xl font-bold text-green-600">None overdue</div>
         ) : (
@@ -21,7 +19,7 @@ export function OverdueTasksWidget({ data }: Props) {
             <div className="mt-1 text-xs text-muted-foreground">tasks overdue</div>
           </>
         )}
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }

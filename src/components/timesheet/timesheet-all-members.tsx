@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -30,7 +31,6 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { RequestDetailDialog } from "@/components/shared/request-detail-dialog";
 import { formatDate } from "@/lib/utils/format";
 
 type Department = { id: string; name: string };
@@ -114,6 +114,7 @@ function exportPDF(data: Submission[]) {
 }
 
 export function TimesheetAllMembers({ submissions, departments }: Props) {
+  const router = useRouter();
   const [filterStatus, setFilterStatus] = useState("all");
   const [filterDept, setFilterDept] = useState("all");
   const [filterStart, setFilterStart] = useState("");
@@ -124,8 +125,6 @@ export function TimesheetAllMembers({ submissions, departments }: Props) {
   } | null>(null);
   const [comment, setComment] = useState("");
   const [isPending, startTransition] = useTransition();
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const [viewing, setViewing] = useState<any | null>(null);
 
   const filtered = submissions.filter((s) => {
     if (filterStatus !== "all" && s.status !== filterStatus) return false;
@@ -255,7 +254,7 @@ export function TimesheetAllMembers({ submissions, departments }: Props) {
                         variant="ghost"
                         size="icon"
                         className="h-7 w-7"
-                        onClick={() => setViewing(s)}
+                        onClick={() => router.push(`/timesheet/view/${s.id}`)}
                       >
                         <Eye className="w-4 h-4" />
                       </Button>
@@ -287,24 +286,6 @@ export function TimesheetAllMembers({ submissions, departments }: Props) {
           </tbody>
         </table>
       </div>
-
-      {/* View detail dialog */}
-      {viewing && (
-        <RequestDetailDialog
-          open={!!viewing}
-          onOpenChange={(o) => !o && setViewing(null)}
-          title={`Timesheet: ${viewing.profiles?.first_name ?? ""} ${viewing.profiles?.last_name ?? ""}`.trim()}
-          showApproval={false}
-        >
-          <div className="text-sm space-y-1">
-            <div><span className="text-muted-foreground">Employee:</span> {viewing.profiles?.first_name} {viewing.profiles?.last_name}</div>
-            <div><span className="text-muted-foreground">Week:</span> {formatDate(viewing.week_start_date)} — {formatDate(viewing.week_end_date)}</div>
-            <div><span className="text-muted-foreground">Total Hours:</span> {((viewing.total_minutes ?? 0) / 60).toFixed(1)}h</div>
-            <div><span className="text-muted-foreground">Status:</span> <Badge>{viewing.status}</Badge></div>
-            {viewing.submitted_at && <div><span className="text-muted-foreground">Submitted:</span> {formatDate(viewing.submitted_at)}</div>}
-          </div>
-        </RequestDetailDialog>
-      )}
 
       {/* Approve/Reject dialog */}
       <Dialog open={!!actionDialog} onOpenChange={(open) => { if (!open) setActionDialog(null); }}>
