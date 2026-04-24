@@ -34,6 +34,26 @@ export default async function PortalLayout({
     redirect("/complete-profile");
   }
 
+  // Fetch workspace folders and their lists for sidebar
+  const { data: rawFolders } = await supabase
+    .from("workspace_folders")
+    .select("id, name")
+    .eq("company_id", profile.company_id)
+    .eq("is_archived", false)
+    .order("name");
+
+  const foldersWithLists = await Promise.all(
+    (rawFolders ?? []).map(async (folder) => {
+      const { data: lists } = await supabase
+        .from("workspace_lists")
+        .select("id, name")
+        .eq("folder_id", folder.id)
+        .eq("is_archived", false)
+        .order("name");
+      return { id: folder.id, name: folder.name, workspace_lists: lists ?? [] };
+    })
+  );
+
   const userName = formatFullName(profile.first_name, profile.last_name);
 
   return (
@@ -42,6 +62,7 @@ export default async function PortalLayout({
         userRoles={roles}
         userName={userName}
         avatarUrl={profile.avatar_url}
+        workspaceFolders={foldersWithLists}
       />
       <div className="flex flex-1 flex-col overflow-hidden">
         <Header userRoles={roles} />
