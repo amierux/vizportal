@@ -1,30 +1,34 @@
 "use client";
 
 import { useState } from "react";
+import dynamic from "next/dynamic";
 import type { DashboardWidget } from "@/types";
 import { Button } from "@/components/ui/button";
 import { removeWidget, updateWidgetSize } from "@/lib/actions/dashboard";
 
-import { AttendanceTodayWidget } from "./widgets/attendance-today";
-import { LateCountMonthWidget } from "./widgets/late-count-month";
-import { OvertimeMonthWidget } from "./widgets/overtime-month";
-import { MyTasksSummaryWidget } from "./widgets/my-tasks-summary";
-import { OverdueTasksWidget } from "./widgets/overdue-tasks";
-import { TimesheetWeekWidget } from "./widgets/timesheet-week";
-import { PendingApprovalsWidget } from "./widgets/pending-approvals";
-import { PendingFormsWidget } from "./widgets/pending-forms";
-import { LeaveBalancesWidget } from "./widgets/leave-balances";
-import { UpcomingLeavesWidget } from "./widgets/upcoming-leaves";
-import { PayrollSummaryWidget } from "./widgets/payroll-summary";
-import { AttendanceRateMonthWidget } from "./widgets/attendance-rate-month";
-import { LeaveUsageTypeWidget } from "./widgets/leave-usage-type";
-import { TaskCompletionRateWidget } from "./widgets/task-completion-rate";
-import { TeamTaskProgressWidget } from "./widgets/team-task-progress";
-import { HeadcountDepartmentWidget } from "./widgets/headcount-department";
-import { AttendanceTrendWidget } from "./widgets/attendance-trend";
-import { PayrollCostTrendWidget } from "./widgets/payroll-cost-trend";
-import { DepartmentComparisonWidget } from "./widgets/department-comparison";
-import { OutOfOfficeWidget } from "./widgets/out-of-office";
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const widgetComponents: Record<string, React.ComponentType<{ data: any }>> = {
+  attendance_today: dynamic(() => import("./widgets/attendance-today").then(m => ({ default: m.AttendanceTodayWidget }))),
+  late_count_month: dynamic(() => import("./widgets/late-count-month").then(m => ({ default: m.LateCountMonthWidget }))),
+  overtime_month: dynamic(() => import("./widgets/overtime-month").then(m => ({ default: m.OvertimeMonthWidget }))),
+  my_tasks_summary: dynamic(() => import("./widgets/my-tasks-summary").then(m => ({ default: m.MyTasksSummaryWidget }))),
+  overdue_tasks: dynamic(() => import("./widgets/overdue-tasks").then(m => ({ default: m.OverdueTasksWidget }))),
+  timesheet_week: dynamic(() => import("./widgets/timesheet-week").then(m => ({ default: m.TimesheetWeekWidget }))),
+  pending_approvals: dynamic(() => import("./widgets/pending-approvals").then(m => ({ default: m.PendingApprovalsWidget }))),
+  pending_forms: dynamic(() => import("./widgets/pending-forms").then(m => ({ default: m.PendingFormsWidget }))),
+  leave_balances: dynamic(() => import("./widgets/leave-balances").then(m => ({ default: m.LeaveBalancesWidget }))),
+  upcoming_leaves: dynamic(() => import("./widgets/upcoming-leaves").then(m => ({ default: m.UpcomingLeavesWidget }))),
+  payroll_summary: dynamic(() => import("./widgets/payroll-summary").then(m => ({ default: m.PayrollSummaryWidget }))),
+  attendance_rate_month: dynamic(() => import("./widgets/attendance-rate-month").then(m => ({ default: m.AttendanceRateMonthWidget }))),
+  leave_usage_type: dynamic(() => import("./widgets/leave-usage-type").then(m => ({ default: m.LeaveUsageTypeWidget }))),
+  task_completion_rate: dynamic(() => import("./widgets/task-completion-rate").then(m => ({ default: m.TaskCompletionRateWidget }))),
+  team_task_progress: dynamic(() => import("./widgets/team-task-progress").then(m => ({ default: m.TeamTaskProgressWidget }))),
+  headcount_department: dynamic(() => import("./widgets/headcount-department").then(m => ({ default: m.HeadcountDepartmentWidget }))),
+  attendance_trend: dynamic(() => import("./widgets/attendance-trend").then(m => ({ default: m.AttendanceTrendWidget }))),
+  payroll_cost_trend: dynamic(() => import("./widgets/payroll-cost-trend").then(m => ({ default: m.PayrollCostTrendWidget }))),
+  department_comparison: dynamic(() => import("./widgets/department-comparison").then(m => ({ default: m.DepartmentComparisonWidget }))),
+  out_of_office: dynamic(() => import("./widgets/out-of-office").then(m => ({ default: m.OutOfOfficeWidget }))),
+};
 
 type WidgetSize = "small" | "medium" | "large";
 
@@ -49,50 +53,10 @@ function sizeClass(size: WidgetSize): string {
 function renderWidget(type: string, data: any) {
   if (!data) return <div className="text-sm text-muted-foreground p-4">No data available.</div>;
 
-  switch (type) {
-    case "attendance_today":
-      return <AttendanceTodayWidget data={data} />;
-    case "late_count_month":
-      return <LateCountMonthWidget data={data} />;
-    case "overtime_month":
-      return <OvertimeMonthWidget data={data} />;
-    case "my_tasks_summary":
-      return <MyTasksSummaryWidget data={data} />;
-    case "overdue_tasks":
-      return <OverdueTasksWidget data={data} />;
-    case "timesheet_week":
-      return <TimesheetWeekWidget data={data} />;
-    case "pending_approvals":
-      return <PendingApprovalsWidget data={data} />;
-    case "pending_forms":
-      return <PendingFormsWidget data={data} />;
-    case "leave_balances":
-      return <LeaveBalancesWidget data={data} />;
-    case "upcoming_leaves":
-      return <UpcomingLeavesWidget data={data} />;
-    case "payroll_summary":
-      return <PayrollSummaryWidget data={data} />;
-    case "attendance_rate_month":
-      return <AttendanceRateMonthWidget data={data} />;
-    case "leave_usage_type":
-      return <LeaveUsageTypeWidget data={data} />;
-    case "task_completion_rate":
-      return <TaskCompletionRateWidget data={data} />;
-    case "team_task_progress":
-      return <TeamTaskProgressWidget data={data} />;
-    case "headcount_department":
-      return <HeadcountDepartmentWidget data={data} />;
-    case "attendance_trend":
-      return <AttendanceTrendWidget data={data} />;
-    case "payroll_cost_trend":
-      return <PayrollCostTrendWidget data={data} />;
-    case "department_comparison":
-      return <DepartmentComparisonWidget data={data} />;
-    case "out_of_office":
-      return <OutOfOfficeWidget data={data} />;
-    default:
-      return <div className="text-sm text-muted-foreground p-4">Unknown widget type.</div>;
-  }
+  const Widget = widgetComponents[type];
+  if (!Widget) return <div className="text-sm text-muted-foreground p-4">Unknown widget type.</div>;
+
+  return <Widget data={data} />;
 }
 
 export function WidgetCard({ widget, data }: Props) {
