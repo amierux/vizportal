@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect, useCallback, useTransition } from "react";
+import { useState, useEffect, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
@@ -10,10 +11,7 @@ import { Input } from "@/components/ui/input";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
-import { Eye, Search, Download, FileSpreadsheet, FileText, Clock } from "lucide-react";
-import {
-  Dialog, DialogContent, DialogHeader, DialogTitle,
-} from "@/components/ui/dialog";
+import { Eye, Search, Download, FileSpreadsheet, FileText } from "lucide-react";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
@@ -52,11 +50,11 @@ type Props = {
 };
 
 export function OvertimePageClient({ myRequests, analyticsData, roles, departments, isAdminLevel }: Props) {
+  const router = useRouter();
   const [view, setView] = useState<"my" | "all">("my");
   const [records, setRecords] = useState<any[]>(myRequests);
   const [loading, setLoading] = useState(false);
   const [analytics, setAnalytics] = useState<any | null>(analyticsData);
-  const [viewing, setViewing] = useState<any | null>(null);
 
   // Filters
   const [search, setSearch] = useState("");
@@ -179,9 +177,9 @@ export function OvertimePageClient({ myRequests, analyticsData, roles, departmen
         <div className="flex items-center gap-3">
           <h1 className="text-2xl font-bold">Overtime</h1>
           {isAdminLevel && (
-            <Select value={view} onValueChange={(v) => setView(v as "my" | "all")}>
-              <SelectTrigger className="h-8 w-40 text-sm">
-                <SelectValue />
+            <Select value={view} onValueChange={(v) => setView((v ?? "my") as "my" | "all")}>
+              <SelectTrigger className="h-8 w-44 text-sm">
+                <SelectValue placeholder={view === "my" ? "My Records" : "All Members"} />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="my">My Records</SelectItem>
@@ -296,7 +294,7 @@ export function OvertimePageClient({ myRequests, analyticsData, roles, departmen
             </TableHeader>
             <TableBody>
               {records.map((r: any) => (
-                <TableRow key={r.id} className="table-row-hover cursor-pointer" onClick={() => setViewing(r)}>
+                <TableRow key={r.id} className="table-row-hover cursor-pointer" onClick={() => router.push(`/overtime/${r.id}`)}>
                   {showNameColumn && (
                     <TableCell className="font-medium">
                       {r.profiles?.first_name ?? ""} {r.profiles?.last_name ?? ""}
@@ -317,7 +315,7 @@ export function OvertimePageClient({ myRequests, analyticsData, roles, departmen
                   <TableCell className="max-w-[160px] truncate">{r.reason ?? "—"}</TableCell>
                   <TableCell>
                     <div className="flex items-center gap-1">
-                      <Button variant="ghost" size="icon" className="h-7 w-7" onClick={(e) => { e.stopPropagation(); setViewing(r); }}>
+                      <Button variant="ghost" size="icon" className="h-7 w-7" onClick={(e) => { e.stopPropagation(); router.push(`/overtime/${r.id}`); }}>
                         <Eye className="h-4 w-4" />
                       </Button>
                       {view === "my" && r.status === "pending" && (
@@ -334,82 +332,6 @@ export function OvertimePageClient({ myRequests, analyticsData, roles, departmen
         )}
       </div>
 
-      {/* Detail Dialog — Full Width */}
-      <Dialog open={!!viewing} onOpenChange={(o) => { if (!o) setViewing(null); }}>
-        <DialogContent className="sm:max-w-4xl max-h-[85vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Clock className="h-5 w-5" />
-              Overtime Request: {viewing ? formatDate(viewing.date) : ""}
-            </DialogTitle>
-          </DialogHeader>
-
-          {viewing && (
-            <div className="space-y-4">
-              {/* Summary Cards */}
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                <div className="rounded-lg border p-3">
-                  <p className="text-xs text-muted-foreground">Employee</p>
-                  <p className="font-medium">{viewing.profiles?.first_name ?? "You"} {viewing.profiles?.last_name ?? ""}</p>
-                </div>
-                <div className="rounded-lg border p-3">
-                  <p className="text-xs text-muted-foreground">Date</p>
-                  <p className="font-medium">{formatDate(viewing.date)}</p>
-                </div>
-                <div className="rounded-lg border p-3">
-                  <p className="text-xs text-muted-foreground">Time Range</p>
-                  <p className="font-medium">{viewing.start_time} — {viewing.end_time}</p>
-                </div>
-                <div className="rounded-lg border p-3">
-                  <p className="text-xs text-muted-foreground">Total Hours</p>
-                  <p className="text-xl font-bold">{viewing.total_hours}h</p>
-                </div>
-              </div>
-
-              {/* Details */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                <div className="rounded-lg border p-3">
-                  <p className="text-xs text-muted-foreground">Status</p>
-                  <div className="mt-1">
-                    <Badge variant={STATUS_VARIANTS[viewing.status] ?? "outline"} className="text-sm">
-                      {viewing.status}
-                    </Badge>
-                  </div>
-                </div>
-                <div className="rounded-lg border p-3">
-                  <p className="text-xs text-muted-foreground">Filed On</p>
-                  <p className="font-medium">{formatDate(viewing.created_at)}</p>
-                </div>
-              </div>
-
-              {viewing.reason && (
-                <div className="rounded-lg border p-3">
-                  <p className="text-xs text-muted-foreground mb-1">Reason</p>
-                  <p className="text-sm">{viewing.reason}</p>
-                </div>
-              )}
-
-              {/* Cancel action for own pending requests */}
-              {view === "my" && viewing.status === "pending" && (
-                <div className="flex items-center gap-2 pt-2 border-t">
-                  <Button
-                    variant="destructive"
-                    onClick={() => {
-                      cancelOvertimeRequest(viewing.id).then((result) => {
-                        if ("error" in result) toast.error(result.error);
-                        else { toast.success("Overtime request cancelled"); setViewing(null); }
-                      });
-                    }}
-                  >
-                    <X className="w-4 h-4 mr-1.5" />
-                    Cancel Request
-                  </Button>
-                </div>
-              )}
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }
