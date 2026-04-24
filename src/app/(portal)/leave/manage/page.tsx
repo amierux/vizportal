@@ -13,8 +13,7 @@ export default async function LeaveManagePage({
   const status = params.status ?? "";
   const departmentId = params.department_id ?? "";
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const [requests, leaveTypes] = await Promise.all([
+  const [{ data: requests }, leaveTypes] = await Promise.all([
     getLeaveRequests({
       status: status || undefined,
       departmentId: departmentId || undefined,
