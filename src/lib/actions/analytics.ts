@@ -16,6 +16,7 @@ export async function fetchAttendanceAnalytics(dateFrom?: string, dateTo?: strin
     : getDateRange("this_month");
 
   const supabase = await createClient();
+  // @ts-expect-error — RPC function not in generated types until migration is applied
   const { data, error } = await supabase.rpc("rpc_attendance_analytics", {
     p_company_id: companyId,
     p_date_from: start,
@@ -39,6 +40,7 @@ export async function fetchLeaveAnalytics(dateFrom?: string, dateTo?: string, de
     : getDateRange("this_month");
 
   const supabase = await createClient();
+  // @ts-expect-error — RPC function not in generated types until migration is applied
   const { data, error } = await supabase.rpc("rpc_leave_analytics", {
     p_company_id: companyId,
     p_date_from: start,
@@ -58,6 +60,7 @@ export async function fetchPayrollAnalytics(periodCount?: number) {
   if (!companyId || !hasRole(roles, ADMIN_ROLES)) return null;
 
   const supabase = await createClient();
+  // @ts-expect-error — RPC function not in generated types until migration is applied
   const { data, error } = await supabase.rpc("rpc_payroll_analytics", {
     p_company_id: companyId,
     p_period_count: periodCount ?? 6,
@@ -75,6 +78,7 @@ export async function fetchEmployeeAnalytics() {
   if (!companyId || !hasRole(roles, MANAGER_ROLES)) return null;
 
   const supabase = await createClient();
+  // @ts-expect-error — RPC function not in generated types until migration is applied
   const { data, error } = await supabase.rpc("rpc_employee_analytics", {
     p_company_id: companyId,
   });
@@ -95,6 +99,7 @@ export async function fetchWorkspaceAnalytics(dateFrom?: string, dateTo?: string
     : getDateRange("this_month");
 
   const supabase = await createClient();
+  // @ts-expect-error — RPC function not in generated types until migration is applied
   const { data, error } = await supabase.rpc("rpc_workspace_analytics", {
     p_company_id: companyId,
     p_date_from: start,
@@ -121,6 +126,7 @@ export async function fetchTimesheetAnalytics(weekStart?: string) {
   })();
 
   const supabase = await createClient();
+  // @ts-expect-error — RPC function not in generated types until migration is applied
   const { data, error } = await supabase.rpc("rpc_timesheet_analytics", {
     p_company_id: companyId,
     p_week_start: ws,
@@ -142,6 +148,7 @@ export async function fetchOvertimeAnalytics(dateFrom?: string, dateTo?: string)
     : getDateRange("this_month");
 
   const supabase = await createClient();
+  // @ts-expect-error — RPC function not in generated types until migration is applied
   const { data, error } = await supabase.rpc("rpc_overtime_analytics", {
     p_company_id: companyId,
     p_date_from: start,
@@ -164,6 +171,7 @@ export async function fetchApprovalAnalytics(dateFrom?: string, dateTo?: string)
     : getDateRange("this_month");
 
   const supabase = await createClient();
+  // @ts-expect-error — RPC function not in generated types until migration is applied
   const { data, error } = await supabase.rpc("rpc_approval_analytics", {
     p_company_id: companyId,
     p_date_from: start,
@@ -182,6 +190,7 @@ export async function fetchFormAnalytics() {
   if (!companyId || !hasRole(roles, ADMIN_ROLES)) return null;
 
   const supabase = await createClient();
+  // @ts-expect-error — RPC function not in generated types until migration is applied
   const { data, error } = await supabase.rpc("rpc_form_analytics", {
     p_company_id: companyId,
   });

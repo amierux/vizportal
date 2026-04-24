@@ -175,7 +175,7 @@ export async function recalculateDailySummary(
   const [{ data: entries }, { data: schedule }, { data: empDetail }] = await Promise.all([
     supabase
       .from("clock_entries")
-      .select("id, type, timestamp")
+      .select("*")
       .eq("profile_id", profileId)
       .eq("date", date)
       .order("timestamp", { ascending: true }),

@@ -17,7 +17,7 @@ export async function getMyWidgets() {
 
   const { data } = await supabase
     .from("dashboard_widgets")
-    .select("id, widget_type, position, size")
+    .select("*")
     .eq("profile_id", userId)
     .order("position");
   return data ?? [];
