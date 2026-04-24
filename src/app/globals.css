@@ -250,3 +250,77 @@
 .animate-pulse-glow {
   animation: pulseGlow 2s infinite;
 }
+
+/* Input focus glow */
+input:focus, textarea:focus, select:focus {
+  box-shadow: 0 0 0 3px oklch(0.55 0.15 250 / 0.15);
+  transition: box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.dark input:focus, .dark textarea:focus, .dark select:focus {
+  box-shadow: 0 0 0 3px oklch(0.55 0.15 250 / 0.25);
+}
+
+/* Button press effect */
+button:active:not(:disabled),
+[role="button"]:active:not(:disabled) {
+  transform: scale(0.97);
+  transition: transform 0.1s ease;
+}
+
+/* Header scroll shadow */
+.header-scroll-shadow {
+  box-shadow: none;
+  transition: box-shadow 0.2s ease;
+}
+
+.header-scroll-shadow.scrolled {
+  box-shadow: 0 1px 3px oklch(0 0 0 / 0.08);
+}
+
+.dark .header-scroll-shadow.scrolled {
+  box-shadow: 0 1px 3px oklch(0 0 0 / 0.3);
+}
+
+/* Table row hover with left accent */
+.table-row-hover {
+  position: relative;
+  transition: background-color 0.15s ease;
+}
+
+.table-row-hover::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 4px;
+  bottom: 4px;
+  width: 0;
+  border-radius: 0 2px 2px 0;
+  background: oklch(0.55 0.15 250);
+  transition: width 0.2s ease;
+}
+
+.table-row-hover:hover {
+  background-color: oklch(0.97 0 0);
+}
+
+.dark .table-row-hover:hover {
+  background-color: oklch(0.2 0 0);
+}
+
+.table-row-hover:hover::before {
+  width: 3px;
+}
+
+/* Semantic status colors */
+.status-success { color: oklch(0.55 0.15 155); }
+.status-warning { color: oklch(0.65 0.15 80); }
+.status-error { color: oklch(0.55 0.2 25); }
+.status-info { color: oklch(0.55 0.15 250); }
+.status-neutral { color: oklch(0.55 0 0); }
+
+/* Modal backdrop enhancement */
+.modal-backdrop {
+  backdrop-filter: blur(8px);
+  transition: backdrop-filter 0.2s ease;
+}
