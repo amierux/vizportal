@@ -8,7 +8,7 @@ export default async function TimesheetSettingsPage() {
   ]);
 
   return (
-    <div className="mx-auto max-w-2xl space-y-6 animate-fade-in-up">
+    <div className="mx-auto max-w-2xl space-y-6">
       <h1 className="text-2xl font-bold">Timesheet Settings</h1>
       {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
       <TimesheetSettingsForm settings={settings as any} approvalConfig={approvalConfig as any} />

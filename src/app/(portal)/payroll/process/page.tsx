@@ -69,7 +69,7 @@ export default function ProcessPayrollPage() {
 
   if (loading) {
     return (
-      <div className="space-y-6 animate-fade-in-up">
+      <div className="space-y-6">
         <div className="flex items-center gap-3">
           {backLink}
           <h1 className="text-2xl font-bold">Process Payroll</h1>
@@ -82,7 +82,7 @@ export default function ProcessPayrollPage() {
   const hasDraft = !!draftState?.period;
 
   return (
-    <div className="space-y-6 animate-fade-in-up">
+    <div className="space-y-6">
       <div className="flex items-center gap-3">
         {backLink}
         <div>

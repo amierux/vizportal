@@ -77,7 +77,7 @@ export default async function FormBuilderPage({ params }: { params: Params }) {
   const profiles = profilesResult.data ?? [];
 
   return (
-    <div className="animate-fade-in-up">
+    <div>
       <FormBuilder
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         form={form as any}

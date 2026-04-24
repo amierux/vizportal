@@ -70,7 +70,7 @@ export default async function TaskDetailPage({ params }: PageProps) {
     : "/workspace";
 
   return (
-    <div className="animate-fade-in-up space-y-4">
+    <div className="space-y-4">
       <div className="flex items-center gap-2">
         <Link
           href={backHref}

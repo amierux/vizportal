@@ -16,7 +16,7 @@ export default async function JobLevelsPage() {
     .order("rank");
 
   return (
-    <div className="animate-fade-in-up">
+    <div>
       <JobLevelTable jobLevels={jobLevels ?? []} />
     </div>
   );

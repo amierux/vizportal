@@ -5,7 +5,7 @@ export default async function AttendanceSettingsPage() {
   const days = await getNonWorkingDays();
 
   return (
-    <div className="mx-auto max-w-3xl space-y-6 animate-fade-in-up">
+    <div className="mx-auto max-w-3xl space-y-6">
       <h1 className="text-2xl font-bold">Attendance Settings</h1>
       <div>
         <h2 className="mb-3 text-lg font-semibold">Non-Working Days</h2>

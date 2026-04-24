@@ -11,7 +11,7 @@ export default async function ApprovalSettingsPage() {
   ]);
 
   return (
-    <div className="mx-auto max-w-2xl space-y-6 animate-fade-in-up">
+    <div className="mx-auto max-w-2xl space-y-6">
       <h1 className="text-2xl font-bold">Approval Settings</h1>
       {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
       <ApprovalChainEditor configs={configs as any} />

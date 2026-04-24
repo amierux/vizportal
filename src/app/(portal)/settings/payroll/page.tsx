@@ -16,7 +16,7 @@ export default async function PayrollSettingsPage() {
     ]);
 
   return (
-    <div className="mx-auto max-w-3xl space-y-8 animate-fade-in-up">
+    <div className="mx-auto max-w-3xl space-y-8">
       <h1 className="text-2xl font-bold">Payroll Settings</h1>
       <PayrollSettingsForm settings={settings} />
       <CustomDeductionTypesTable types={deductionTypes} />

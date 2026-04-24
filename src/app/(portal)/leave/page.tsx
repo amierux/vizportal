@@ -48,7 +48,7 @@ export default async function LeavePage() {
     .order("first_name");
 
   return (
-    <div className="space-y-6 animate-fade-in-up">
+    <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">My Leave</h1>
         <LeaveRequestForm leaveTypes={leaveTypes} users={activeProfiles ?? []} />

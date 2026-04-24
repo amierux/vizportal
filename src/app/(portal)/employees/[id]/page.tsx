@@ -98,7 +98,7 @@ export default async function EmployeeDetailPage({
     : [[], []];
 
   return (
-    <div className="mx-auto max-w-3xl animate-fade-in-up">
+    <div className="mx-auto max-w-3xl">
       <h2 className="mb-6 text-xl font-semibold">
         {formatFullName(employee.first_name, employee.last_name)}
       </h2>

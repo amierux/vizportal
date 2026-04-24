@@ -8,7 +8,7 @@ export default async function WorkspaceSettingsPage() {
   ]);
 
   return (
-    <div className="mx-auto max-w-3xl space-y-6 animate-fade-in-up">
+    <div className="mx-auto max-w-3xl space-y-6">
       <h1 className="text-2xl font-bold">Workspace Settings</h1>
       <WorkspaceTemplates
         checklistTemplates={checklistTemplates}

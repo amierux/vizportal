@@ -8,7 +8,7 @@ export default async function ApprovalsPage() {
   const analyticsData = await fetchApprovalAnalytics();
 
   return (
-    <div className="animate-fade-in-up">
+    <div>
       <ApprovalAnalytics data={analyticsData} />
       <ApprovalInbox approvals={pendingApprovals} />
     </div>

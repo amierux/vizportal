@@ -26,7 +26,7 @@ export default async function PayrollEntryPage({ params }: PageProps) {
   );
 
   return (
-    <div className="space-y-6 animate-fade-in-up">
+    <div className="space-y-6">
       <div className="flex items-center gap-3">
         <Link
           href="/payroll/process"

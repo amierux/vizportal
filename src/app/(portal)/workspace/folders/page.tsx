@@ -31,7 +31,7 @@ export default async function BrowseFoldersPage() {
   const folders = await getFolders();
 
   return (
-    <div className="animate-fade-in-up space-y-4">
+    <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">Folders</h1>
         {canCreate && <FolderCreateDialog />}

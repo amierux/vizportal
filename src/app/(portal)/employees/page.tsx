@@ -145,7 +145,7 @@ export default async function EmployeesPage({
   const analyticsData = canSeeAllMembers ? await fetchEmployeeAnalytics() : null;
 
   return (
-    <div className="animate-fade-in-up">
+    <div>
       <EmployeeAnalytics data={analyticsData} />
       <Tabs defaultValue={defaultTab} className="space-y-4">
         <TabsList>

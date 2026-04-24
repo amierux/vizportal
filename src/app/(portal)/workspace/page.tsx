@@ -34,7 +34,7 @@ export default async function WorkspacePage() {
   const statusMap: Record<string, { name: string; color: string }> = {};
 
   return (
-    <div className="animate-fade-in-up flex h-full flex-col gap-4 md:flex-row">
+    <div className="flex h-full flex-col gap-4 md:flex-row">
       {/* Folder sidebar */}
       <aside className="w-full shrink-0 md:w-64">
         <div className="rounded-lg border bg-card">
