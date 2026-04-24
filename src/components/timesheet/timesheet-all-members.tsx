@@ -310,7 +310,7 @@ export function TimesheetAllMembers({ submissions, departments }: Props) {
 
       {/* View detail dialog — full width */}
       <Dialog open={!!viewing} onOpenChange={(o) => { if (!o) { setViewing(null); setViewEntries([]); } }}>
-        <DialogContent className="max-w-5xl max-h-[85vh] overflow-y-auto">
+        <DialogContent className="sm:max-w-5xl max-h-[85vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
               Timesheet: {viewing?.profiles?.first_name ?? ""} {viewing?.profiles?.last_name ?? ""}
