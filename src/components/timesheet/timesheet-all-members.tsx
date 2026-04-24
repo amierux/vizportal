@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -21,8 +22,7 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { CheckCircle2, XCircle, Download, Eye, FileSpreadsheet, FileText, Clock, FileQuestion } from "lucide-react";
-import { getTimesheetEntries } from "@/lib/actions/workspace-time-entries";
+import { CheckCircle2, XCircle, Download, Eye, FileSpreadsheet, FileText } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -114,6 +114,7 @@ function exportPDF(data: Submission[]) {
 }
 
 export function TimesheetAllMembers({ submissions, departments }: Props) {
+  const router = useRouter();
   const [filterStatus, setFilterStatus] = useState("all");
   const [filterDept, setFilterDept] = useState("all");
   const [filterStart, setFilterStart] = useState("");
@@ -124,28 +125,6 @@ export function TimesheetAllMembers({ submissions, departments }: Props) {
   } | null>(null);
   const [comment, setComment] = useState("");
   const [isPending, startTransition] = useTransition();
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const [viewing, setViewing] = useState<any | null>(null);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const [viewEntries, setViewEntries] = useState<any[]>([]);
-  const [entriesLoading, setEntriesLoading] = useState(false);
-
-  async function handleView(submission: Submission) {
-    setViewing(submission);
-    setEntriesLoading(true);
-    try {
-      const entries = await getTimesheetEntries(
-        submission.profile_id,
-        submission.week_start_date,
-        submission.week_end_date,
-      );
-      setViewEntries(entries);
-    } catch {
-      setViewEntries([]);
-    } finally {
-      setEntriesLoading(false);
-    }
-  }
 
   const filtered = submissions.filter((s) => {
     if (filterStatus !== "all" && s.status !== filterStatus) return false;
@@ -275,7 +254,7 @@ export function TimesheetAllMembers({ submissions, departments }: Props) {
                         variant="ghost"
                         size="icon"
                         className="h-7 w-7"
-                        onClick={() => handleView(s)}
+                        onClick={() => router.push(`/timesheet/view/${s.id}`)}
                       >
                         <Eye className="w-4 h-4" />
                       </Button>
@@ -307,140 +286,6 @@ export function TimesheetAllMembers({ submissions, departments }: Props) {
           </tbody>
         </table>
       </div>
-
-      {/* View detail dialog — full width */}
-      <Dialog open={!!viewing} onOpenChange={(o) => { if (!o) { setViewing(null); setViewEntries([]); } }}>
-        <DialogContent className="sm:max-w-5xl max-h-[85vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>
-              Timesheet: {viewing?.profiles?.first_name ?? ""} {viewing?.profiles?.last_name ?? ""}
-            </DialogTitle>
-          </DialogHeader>
-
-          {viewing && (
-            <div className="text-sm space-y-4">
-              {/* Summary row */}
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                <div className="rounded-lg border p-3">
-                  <p className="text-xs text-muted-foreground">Employee</p>
-                  <p className="font-medium">{viewing.profiles?.first_name} {viewing.profiles?.last_name}</p>
-                </div>
-                <div className="rounded-lg border p-3">
-                  <p className="text-xs text-muted-foreground">Week</p>
-                  <p className="font-medium">{formatDate(viewing.week_start_date)} — {formatDate(viewing.week_end_date)}</p>
-                </div>
-                <div className="rounded-lg border p-3">
-                  <p className="text-xs text-muted-foreground">Total Hours</p>
-                  <p className="text-xl font-bold">{((viewing.total_minutes ?? 0) / 60).toFixed(1)}h</p>
-                </div>
-                <div className="rounded-lg border p-3">
-                  <p className="text-xs text-muted-foreground">Status</p>
-                  <div className="mt-0.5"><StatusBadge status={viewing.status} /></div>
-                </div>
-              </div>
-
-              {/* Time Entries Breakdown */}
-              <div>
-                <h4 className="text-sm font-semibold mb-2 flex items-center gap-1.5">
-                  <Clock className="h-4 w-4" />
-                  Time Entries
-                </h4>
-                {entriesLoading ? (
-                  <div className="text-muted-foreground text-sm py-4 text-center">Loading entries...</div>
-                ) : viewEntries.length === 0 ? (
-                  <div className="flex flex-col items-center gap-2 py-6 text-muted-foreground text-sm">
-                    <FileQuestion className="h-8 w-8 opacity-40" />
-                    No time entries found for this week
-                  </div>
-                ) : (
-                  <div className="rounded-lg border overflow-hidden">
-                    <table className="w-full text-sm">
-                      <thead>
-                        <tr className="border-b bg-muted/50">
-                          <th className="px-3 py-2 text-left font-medium">Task</th>
-                          <th className="px-3 py-2 text-left font-medium">Date</th>
-                          <th className="px-3 py-2 text-right font-medium">Hours</th>
-                          <th className="px-3 py-2 text-left font-medium">Billable</th>
-                          <th className="px-3 py-2 text-left font-medium">Description</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {viewEntries.map((entry: any) => (
-                          <tr key={entry.id} className="border-b last:border-0 hover:bg-muted/20 transition-colors">
-                            <td className="px-3 py-2 font-medium">
-                              {entry.workspace_tasks?.name ?? <span className="text-muted-foreground italic">Unknown task</span>}
-                            </td>
-                            <td className="px-3 py-2 text-muted-foreground">{formatDate(entry.date)}</td>
-                            <td className="px-3 py-2 text-right font-mono">
-                              {(entry.duration_minutes / 60).toFixed(1)}h
-                            </td>
-                            <td className="px-3 py-2">
-                              {entry.is_billable ? (
-                                <Badge className="bg-green-600 text-white text-xs">Yes</Badge>
-                              ) : (
-                                <span className="text-muted-foreground">No</span>
-                              )}
-                            </td>
-                            <td className="px-3 py-2 text-muted-foreground max-w-[300px] truncate">
-                              {entry.description || "—"}
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                      <tfoot>
-                        <tr className="bg-muted/30 font-semibold">
-                          <td className="px-3 py-2" colSpan={2}>Total</td>
-                          <td className="px-3 py-2 text-right font-mono">
-                            {(viewEntries.reduce((sum: number, e: any) => sum + (e.duration_minutes ?? 0), 0) / 60).toFixed(1)}h
-                          </td>
-                          <td colSpan={2}></td>
-                        </tr>
-                      </tfoot>
-                    </table>
-                  </div>
-                )}
-              </div>
-
-              {/* Approve / Reject buttons inside detail view */}
-              {viewing.status === "submitted" && (
-                <div className="flex items-center gap-2 pt-2 border-t">
-                  <Button
-                    className="bg-green-600 hover:bg-green-700 text-white"
-                    onClick={() => {
-                      const name = `${viewing.profiles?.first_name ?? ""} ${viewing.profiles?.last_name ?? ""}`.trim();
-                      setViewing(null);
-                      setViewEntries([]);
-                      handleAction("approve", viewing.id, name);
-                    }}
-                  >
-                    <CheckCircle2 className="w-4 h-4 mr-1.5" />
-                    Approve Timesheet
-                  </Button>
-                  <Button
-                    variant="destructive"
-                    onClick={() => {
-                      const name = `${viewing.profiles?.first_name ?? ""} ${viewing.profiles?.last_name ?? ""}`.trim();
-                      setViewing(null);
-                      setViewEntries([]);
-                      handleAction("reject", viewing.id, name);
-                    }}
-                  >
-                    <XCircle className="w-4 h-4 mr-1.5" />
-                    Reject Timesheet
-                  </Button>
-                </div>
-              )}
-
-              {/* Show submitted date if available */}
-              {viewing.submitted_at && (
-                <p className="text-xs text-muted-foreground">
-                  Submitted on {formatDate(viewing.submitted_at)}
-                </p>
-              )}
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
 
       {/* Approve/Reject dialog */}
       <Dialog open={!!actionDialog} onOpenChange={(open) => { if (!open) setActionDialog(null); }}>
