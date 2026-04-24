@@ -1,11 +1,15 @@
 import { getMyPendingApprovals } from "@/lib/actions/approvals";
+import { fetchApprovalAnalytics } from "@/lib/actions/analytics";
 import { ApprovalInbox } from "@/components/approvals/approval-inbox";
+import { ApprovalAnalytics } from "@/components/approvals/approval-analytics";
 
 export default async function ApprovalsPage() {
   const pendingApprovals = await getMyPendingApprovals();
+  const analyticsData = await fetchApprovalAnalytics();
 
   return (
     <div className="animate-fade-in-up">
+      <ApprovalAnalytics data={analyticsData} />
       <ApprovalInbox approvals={pendingApprovals} />
     </div>
   );
