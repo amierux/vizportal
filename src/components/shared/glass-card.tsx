@@ -12,10 +12,11 @@ const elevationClasses: Record<Elevation, string> = {
   floating: "glass-floating",
 };
 
-type GlassCardProps = HTMLMotionProps<"div"> & {
+type GlassCardProps = Omit<HTMLMotionProps<"div">, "children"> & {
   elevation?: Elevation;
   hoverLift?: boolean;
   accentColor?: string;
+  children?: React.ReactNode;
 };
 
 export const GlassCard = forwardRef<HTMLDivElement, GlassCardProps>(

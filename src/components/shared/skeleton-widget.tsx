@@ -1,9 +1,9 @@
 import { cn } from "@/lib/utils";
 
-type SkeletonProps = { className?: string };
+type SkeletonProps = { className?: string; style?: React.CSSProperties };
 
-function Skeleton({ className }: SkeletonProps) {
-  return <div className={cn("rounded-md bg-muted animate-shimmer", className)} />;
+function Skeleton({ className, style }: SkeletonProps) {
+  return <div className={cn("rounded-md bg-muted animate-shimmer", className)} style={style} />;
 }
 
 type SkeletonWidgetProps = {
