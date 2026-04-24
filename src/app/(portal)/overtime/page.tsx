@@ -1,13 +1,18 @@
 import { getMyOvertimeRequests } from "@/lib/actions/overtime";
+import { fetchOvertimeAnalytics } from "@/lib/actions/analytics";
 import { OvertimeRequestForm } from "@/components/overtime/overtime-request-form";
 import { OvertimeRequestsTable } from "@/components/overtime/overtime-requests-table";
 import { OvertimeRecords } from "@/components/overtime/overtime-records";
+import { OvertimeAnalytics } from "@/components/overtime/overtime-analytics";
 import { createClient } from "@/lib/supabase/server";
 import { Separator } from "@/components/ui/separator";
 import type { RoleName } from "@/types";
 
 export default async function OvertimePage() {
-  const requests = await getMyOvertimeRequests();
+  const [requests, analyticsData] = await Promise.all([
+    getMyOvertimeRequests(),
+    fetchOvertimeAnalytics(),
+  ]);
 
   const supabase = await createClient();
   const {
@@ -39,6 +44,8 @@ export default async function OvertimePage() {
         <h1 className="text-2xl font-bold">Overtime</h1>
         <OvertimeRequestForm />
       </div>
+
+      <OvertimeAnalytics data={analyticsData} />
 
       <div>
         <h2 className="mb-3 text-lg font-semibold">My Requests</h2>

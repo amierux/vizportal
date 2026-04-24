@@ -3,8 +3,10 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { getMyTasks } from "@/lib/actions/workspace-tasks";
 import { getFolders } from "@/lib/actions/workspace-folders";
+import { fetchWorkspaceAnalytics } from "@/lib/actions/analytics";
 import { MyTasksView } from "@/components/workspace/my-tasks-view";
 import { FolderCreateDialog } from "@/components/workspace/folder-create-dialog";
+import { WorkspaceAnalytics } from "@/components/workspace/workspace-analytics";
 import { cn } from "@/lib/utils";
 import type { RoleName } from "@/types";
 
@@ -16,10 +18,11 @@ export default async function WorkspacePage() {
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
-  const [tasks, folders, userRolesData] = await Promise.all([
+  const [tasks, folders, userRolesData, analyticsData] = await Promise.all([
     getMyTasks(),
     getFolders(),
     supabase.from("user_roles").select("roles(name)").eq("profile_id", user.id),
+    fetchWorkspaceAnalytics(),
   ]);
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -76,6 +79,7 @@ export default async function WorkspacePage() {
       {/* Main: My Tasks */}
       <main className="flex-1 space-y-4">
         <h1 className="text-2xl font-bold">My Tasks</h1>
+        <WorkspaceAnalytics data={analyticsData} />
         {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
         <MyTasksView tasks={tasks as any} statusMap={statusMap} />
       </main>
