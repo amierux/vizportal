@@ -1,6 +1,7 @@
 "use client";
 
 import { usePathname } from "next/navigation";
+import { useState, useEffect } from "react";
 import { ThemeToggle } from "@/components/layout/theme-toggle";
 import { NotificationBell } from "@/components/notifications/notification-bell";
 import { buttonVariants } from "@/components/ui/button";
@@ -63,6 +64,15 @@ type HeaderProps = {
 
 export function Header({ userRoles }: HeaderProps) {
   const pathname = usePathname();
+  const [scrolled, setScrolled] = useState(false);
+
+  useEffect(() => {
+    const main = document.querySelector("main");
+    if (!main) return;
+    const handler = () => setScrolled(main.scrollTop > 10);
+    main.addEventListener("scroll", handler, { passive: true });
+    return () => main.removeEventListener("scroll", handler);
+  }, []);
 
   const mobileMenuItems = [
     { label: "Company", href: "/company", roles: ["admin", "hr"] as RoleName[] },
@@ -71,7 +81,7 @@ export function Header({ userRoles }: HeaderProps) {
   ].filter((item) => hasRequiredRole(userRoles, item.roles));
 
   return (
-    <header className="flex h-14 items-center justify-between border-b px-4">
+    <header className={`flex h-14 items-center justify-between border-b px-4 header-scroll-shadow${scrolled ? " scrolled" : ""}`}>
       <div className="flex items-center gap-2 md:hidden">
         <Sheet>
           <SheetTrigger
