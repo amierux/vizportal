@@ -8,6 +8,8 @@ import { formatFullName, formatDate } from "@/lib/utils/format";
 import { notFound } from "next/navigation";
 import { cn } from "@/lib/utils";
 
+export const dynamic = "force-dynamic";
+
 type PageProps = { params: Promise<{ entryId: string }> };
 
 export default async function PayrollEntryPage({ params }: PageProps) {

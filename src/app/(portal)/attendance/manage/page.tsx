@@ -5,6 +5,8 @@ import { SGT_TIMEZONE } from "@/lib/constants";
 import { fetchAttendanceAnalytics } from "@/lib/actions/analytics";
 import { AttendanceAnalytics } from "@/components/attendance/attendance-analytics";
 
+export const dynamic = "force-dynamic";
+
 type SearchParams = Promise<{ [key: string]: string | undefined }>;
 
 export default async function AttendanceManagePage({

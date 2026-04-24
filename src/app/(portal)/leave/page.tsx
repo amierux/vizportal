@@ -8,6 +8,8 @@ import { LeaveRecords } from "@/components/leave/leave-records";
 import { Separator } from "@/components/ui/separator";
 import type { RoleName } from "@/types";
 
+export const dynamic = "force-dynamic";
+
 export default async function LeavePage() {
   const [balances, requests, leaveTypes] = await Promise.all([
     getMyLeaveBalances(),

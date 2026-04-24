@@ -4,6 +4,8 @@ import { getMyAssignedForms } from "@/lib/actions/forms";
 import { getMyFormSubmissions } from "@/lib/actions/form-submissions";
 import { MyFormsList } from "@/components/forms/my-forms-list";
 
+export const dynamic = "force-dynamic";
+
 export default async function MyFormsPage() {
   const supabase = await createClient();
 

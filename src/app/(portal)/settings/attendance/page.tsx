@@ -1,6 +1,8 @@
 import { getNonWorkingDays } from "@/lib/actions/non-working-days";
 import { NonWorkingDaysTable } from "@/components/attendance/non-working-days-table";
 
+export const dynamic = "force-dynamic";
+
 export default async function AttendanceSettingsPage() {
   const days = await getNonWorkingDays();
 

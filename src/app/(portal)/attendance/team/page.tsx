@@ -1,6 +1,8 @@
 import { getTeamAttendanceToday } from "@/lib/actions/attendance";
 import { AttendanceTable } from "@/components/attendance/attendance-table";
 
+export const dynamic = "force-dynamic";
+
 export default async function TeamAttendancePage() {
   const teamData = await getTeamAttendanceToday();
 

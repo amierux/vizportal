@@ -4,6 +4,8 @@ import { ApprovalSettingsForm } from "@/components/settings/approval-settings-fo
 import { ApprovalChainEditor } from "@/components/settings/approval-chain-editor";
 import { Separator } from "@/components/ui/separator";
 
+export const dynamic = "force-dynamic";
+
 export default async function ApprovalSettingsPage() {
   const [settings, configs] = await Promise.all([
     getSystemSettings(),

@@ -13,6 +13,8 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { RoleName } from "@/types";
 
+export const dynamic = "force-dynamic";
+
 function getMonday(date: Date): Date {
   const d = new Date(date);
   const day = d.getDay();

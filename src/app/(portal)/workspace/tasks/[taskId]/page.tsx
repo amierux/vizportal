@@ -10,6 +10,8 @@ import { TaskDetailPanel } from "@/components/workspace/task-detail-panel";
 import { buttonVariants } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
 
+export const dynamic = "force-dynamic";
+
 type PageProps = {
   params: Promise<{ taskId: string }>;
 };

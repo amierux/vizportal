@@ -16,6 +16,8 @@ import { useState, useEffect as useLayoutEffect } from "react";
 import { formatDate } from "@/lib/utils/format";
 import { cn } from "@/lib/utils";
 
+export const dynamic = "force-dynamic";
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type DraftState = { period: any | null; entries: any[] } | null;
 

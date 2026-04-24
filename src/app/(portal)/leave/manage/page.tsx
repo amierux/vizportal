@@ -4,6 +4,8 @@ import { fetchLeaveAnalytics } from "@/lib/actions/analytics";
 import { LeaveRequestsTable } from "@/components/leave/leave-requests-table";
 import { LeaveAnalytics } from "@/components/leave/leave-analytics";
 
+export const dynamic = "force-dynamic";
+
 type SearchParams = Promise<{ [key: string]: string | undefined }>;
 
 export default async function LeaveManagePage({

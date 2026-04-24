@@ -10,6 +10,8 @@ import { WorkspaceAnalytics } from "@/components/workspace/workspace-analytics";
 import { cn } from "@/lib/utils";
 import type { RoleName } from "@/types";
 
+export const dynamic = "force-dynamic";
+
 export default async function WorkspacePage() {
   const supabase = await createClient();
 

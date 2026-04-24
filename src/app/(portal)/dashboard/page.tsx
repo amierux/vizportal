@@ -25,6 +25,8 @@ import {
 } from "@/lib/actions/dashboard";
 import { DashboardGrid } from "@/components/dashboard/dashboard-grid";
 
+export const dynamic = "force-dynamic";
+
 const WIDGET_FETCHERS: Record<string, () => Promise<unknown>> = {
   attendance_today: fetchAttendanceToday,
   late_count_month: fetchLateCountMonth,

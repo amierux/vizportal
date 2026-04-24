@@ -11,6 +11,8 @@ import { EMPLOYEES_PER_PAGE } from "@/lib/constants";
 import { formatFullName } from "@/lib/utils/format";
 import type { RoleName } from "@/types";
 
+export const dynamic = "force-dynamic";
+
 type SearchParams = Promise<{ [key: string]: string | undefined }>;
 
 const ALL_MEMBERS_ROLES: RoleName[] = ["admin", "hr", "director", "business_manager"];

@@ -1,6 +1,8 @@
 import { getSystemSettings } from "@/lib/actions/system-settings";
 import { SystemConfigForm } from "@/components/settings/system-config-form";
 
+export const dynamic = "force-dynamic";
+
 export default async function SystemSettingsPage() {
   const settings = await getSystemSettings();
 

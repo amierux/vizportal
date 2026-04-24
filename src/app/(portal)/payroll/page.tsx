@@ -9,6 +9,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
 import type { RoleName } from "@/types";
 
+export const dynamic = "force-dynamic";
+
 export default async function PayrollPage() {
   const supabase = await createClient();
   const {

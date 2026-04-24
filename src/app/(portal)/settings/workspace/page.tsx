@@ -1,6 +1,8 @@
 import { getChecklistTemplates, getListTemplates } from "@/lib/actions/workspace-templates";
 import { WorkspaceTemplates } from "@/components/settings/workspace-templates";
 
+export const dynamic = "force-dynamic";
+
 export default async function WorkspaceSettingsPage() {
   const [checklistTemplates, listTemplates] = await Promise.all([
     getChecklistTemplates(),

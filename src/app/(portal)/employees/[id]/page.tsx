@@ -11,6 +11,8 @@ import { getRecurringDeductions, getCustomDeductionTypes } from "@/lib/actions/p
 import { formatFullName } from "@/lib/utils/format";
 import type { RoleName } from "@/types";
 
+export const dynamic = "force-dynamic";
+
 type Params = Promise<{ id: string }>;
 
 export default async function EmployeeDetailPage({

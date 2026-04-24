@@ -5,6 +5,8 @@ import { getFormSubmissions } from "@/lib/actions/form-submissions";
 import { SubmissionsTable } from "@/components/forms/submissions-table";
 import type { RoleName } from "@/types";
 
+export const dynamic = "force-dynamic";
+
 type Params = Promise<{ formId: string }>;
 
 const ADMIN_ROLES: RoleName[] = ["admin", "hr"];

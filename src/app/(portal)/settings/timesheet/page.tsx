@@ -1,6 +1,8 @@
 import { getTimesheetSettings, getTimesheetApprovalConfig } from "@/lib/actions/timesheet-settings";
 import { TimesheetSettingsForm } from "@/components/settings/timesheet-settings-form";
 
+export const dynamic = "force-dynamic";
+
 export default async function TimesheetSettingsPage() {
   const [settings, approvalConfig] = await Promise.all([
     getTimesheetSettings(),

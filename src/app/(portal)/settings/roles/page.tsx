@@ -1,6 +1,8 @@
 import { createClient } from "@/lib/supabase/server";
 import { RoleTable } from "@/components/settings/role-table";
 
+export const dynamic = "force-dynamic";
+
 export default async function RolesPage() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();

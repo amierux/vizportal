@@ -2,6 +2,8 @@ import { getApprovalByToken } from "@/lib/actions/approvals";
 import { ApprovalPublicPage } from "@/components/approvals/approval-public-page";
 import { notFound } from "next/navigation";
 
+export const dynamic = "force-dynamic";
+
 type Params = Promise<{ token: string }>;
 
 export default async function ApprovalTokenPage({

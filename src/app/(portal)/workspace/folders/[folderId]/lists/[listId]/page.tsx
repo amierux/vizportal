@@ -7,6 +7,8 @@ import { getChecklistTemplates } from "@/lib/actions/workspace-templates";
 import { TaskCreateDialog } from "@/components/workspace/task-create-dialog";
 import { FolderViewClient } from "@/components/workspace/folder-view-client";
 
+export const dynamic = "force-dynamic";
+
 type PageProps = {
   params: Promise<{ folderId: string; listId: string }>;
   searchParams: Promise<{ view?: string }>;

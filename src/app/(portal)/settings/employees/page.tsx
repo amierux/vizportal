@@ -3,6 +3,8 @@ import { getLeaveSettings } from "@/lib/actions/leave-settings";
 import { LeaveTypeTable } from "@/components/leave/leave-type-table";
 import { LeaveSettingsForm } from "@/components/leave/leave-settings-form";
 
+export const dynamic = "force-dynamic";
+
 export default async function EmployeeSettingsPage() {
   const [leaveTypes, settings] = await Promise.all([
     getLeaveTypes(),

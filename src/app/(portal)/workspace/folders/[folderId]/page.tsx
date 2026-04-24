@@ -9,6 +9,8 @@ import { TaskCreateDialog } from "@/components/workspace/task-create-dialog";
 import { FolderViewClient } from "@/components/workspace/folder-view-client";
 import type { RoleName } from "@/types";
 
+export const dynamic = "force-dynamic";
+
 type PageProps = {
   params: Promise<{ folderId: string }>;
   searchParams: Promise<{ list?: string; view?: string }>;

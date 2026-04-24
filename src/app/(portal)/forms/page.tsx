@@ -5,6 +5,8 @@ import { fetchFormAnalytics } from "@/lib/actions/analytics";
 import { FormListTable } from "@/components/forms/form-list-table";
 import { FormAnalytics } from "@/components/forms/form-analytics";
 
+export const dynamic = "force-dynamic";
+
 export default async function FormsPage() {
   const supabase = await createClient();
 

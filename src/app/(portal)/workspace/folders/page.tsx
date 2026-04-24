@@ -6,6 +6,8 @@ import { FolderCreateDialog } from "@/components/workspace/folder-create-dialog"
 import { hasRequiredRole } from "@/lib/utils/roles";
 import type { RoleName } from "@/types";
 
+export const dynamic = "force-dynamic";
+
 const FOLDER_CREATE_ROLES: RoleName[] = ["team_leader", "dept_manager", "director", "admin"];
 
 export default async function BrowseFoldersPage() {

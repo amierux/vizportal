@@ -4,6 +4,8 @@ import { PayrollSettingsForm } from "@/components/settings/payroll-settings-form
 import { CustomDeductionTypesTable } from "@/components/settings/custom-deduction-types-table";
 import { ContributionTablesEditor } from "@/components/settings/contribution-tables-editor";
 
+export const dynamic = "force-dynamic";
+
 export default async function PayrollSettingsPage() {
   const [settings, deductionTypes, sssBrackets, philhealthBrackets, pagibigBrackets, taxBrackets] =
     await Promise.all([

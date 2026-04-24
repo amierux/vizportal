@@ -1,6 +1,8 @@
 import { createClient } from "@/lib/supabase/server";
 import { JobLevelTable } from "@/components/settings/job-level-table";
 
+export const dynamic = "force-dynamic";
+
 export default async function JobLevelsPage() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();

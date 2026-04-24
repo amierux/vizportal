@@ -8,6 +8,8 @@ import { createClient } from "@/lib/supabase/server";
 import { Separator } from "@/components/ui/separator";
 import type { RoleName } from "@/types";
 
+export const dynamic = "force-dynamic";
+
 export default async function OvertimePage() {
   const [requests, analyticsData] = await Promise.all([
     getMyOvertimeRequests(),

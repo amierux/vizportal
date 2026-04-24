@@ -2,6 +2,8 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { DepartmentList } from "@/components/company/department-list";
 
+export const dynamic = "force-dynamic";
+
 export default async function DepartmentsSettingsPage() {
   const supabase = await createClient();
 

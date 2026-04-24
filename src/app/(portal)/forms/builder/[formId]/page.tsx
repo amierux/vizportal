@@ -4,6 +4,8 @@ import { getForm } from "@/lib/actions/forms";
 import { FormBuilder } from "@/components/forms/form-builder";
 import type { RoleName } from "@/types";
 
+export const dynamic = "force-dynamic";
+
 type Params = Promise<{ formId: string }>;
 
 export default async function FormBuilderPage({ params }: { params: Params }) {

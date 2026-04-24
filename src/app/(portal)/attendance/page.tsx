@@ -9,6 +9,8 @@ import { AttendanceRecords } from "@/components/attendance/attendance-records";
 import { Separator } from "@/components/ui/separator";
 import type { RoleName } from "@/types";
 
+export const dynamic = "force-dynamic";
+
 export default async function AttendancePage() {
   const supabase = await createClient();
   const {

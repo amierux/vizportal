@@ -2,6 +2,8 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { CompanyForm } from "@/components/company/company-form";
 
+export const dynamic = "force-dynamic";
+
 export default async function CompanySettingsPage() {
   const supabase = await createClient();
 
