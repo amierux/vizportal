@@ -5,6 +5,7 @@ import { Sidebar } from "@/components/layout/sidebar";
 import { BottomTabs } from "@/components/layout/bottom-tabs";
 import { Header } from "@/components/layout/header";
 import { formatFullName } from "@/lib/utils/format";
+import { PageTransition } from "@/components/shared/page-transition";
 
 export default async function PortalLayout({
   children,
@@ -45,7 +46,9 @@ export default async function PortalLayout({
       <div className="flex flex-1 flex-col overflow-hidden">
         <Header userRoles={roles} />
         <main className="flex-1 overflow-y-auto p-4 pb-20 md:p-6 md:pb-6">
-          {children}
+          <PageTransition>
+            {children}
+          </PageTransition>
         </main>
       </div>
       <BottomTabs userRoles={roles} />
