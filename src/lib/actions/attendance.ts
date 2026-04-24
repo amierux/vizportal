@@ -172,29 +172,26 @@ export async function recalculateDailySummary(
 ) {
   const supabase = await createClient();
 
-  // Get all clock entries for this profile + date
-  const { data: entries } = await supabase
-    .from("clock_entries")
-    .select("*")
-    .eq("profile_id", profileId)
-    .eq("date", date)
-    .order("timestamp", { ascending: true });
+  const [{ data: entries }, { data: schedule }, { data: empDetail }] = await Promise.all([
+    supabase
+      .from("clock_entries")
+      .select("id, type, timestamp")
+      .eq("profile_id", profileId)
+      .eq("date", date)
+      .order("timestamp", { ascending: true }),
+    supabase
+      .from("employee_schedules")
+      .select("start_time, end_time, work_days")
+      .eq("profile_id", profileId)
+      .single(),
+    supabase
+      .from("employee_details")
+      .select("break_enabled, break_start_time, break_end_time")
+      .eq("profile_id", profileId)
+      .single(),
+  ]);
 
-  // Get employee schedule
-  const { data: schedule } = await supabase
-    .from("employee_schedules")
-    .select("*")
-    .eq("profile_id", profileId)
-    .single();
-
-  if (!schedule) return; // No schedule — can't calculate
-
-  // Get break-time config (optional lunch break)
-  const { data: empDetail } = await supabase
-    .from("employee_details")
-    .select("break_enabled, break_start_time, break_end_time")
-    .eq("profile_id", profileId)
-    .single();
+  if (!schedule) return;
 
   // Calculate required hours from schedule, minus break window if enabled
   const [startH, startM] = schedule.start_time.split(":").map(Number);
