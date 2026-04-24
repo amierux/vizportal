@@ -22,15 +22,24 @@ export async function createTask(_prevState: unknown, formData: FormData) {
   } = await supabase.auth.getUser();
   if (!user) return { error: "Not authenticated" };
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("company_id, first_name, last_name")
-    .eq("id", user.id)
-    .single();
-  if (!profile) return { error: "Profile not found" };
-
   const listId = formData.get("list_id") as string;
   if (!listId) return { error: "List ID required" };
+
+  const [{ data: profile }, { data: list }] = await Promise.all([
+    supabase
+      .from("profiles")
+      .select("company_id, first_name, last_name")
+      .eq("id", user.id)
+      .single(),
+    supabase
+      .from("workspace_lists")
+      .select("folder_id, status_override")
+      .eq("id", listId)
+      .single(),
+  ]);
+
+  if (!profile) return { error: "Profile not found" };
+  if (!list) return { error: "List not found" };
 
   const rawData = {
     name: formData.get("name") as string,
@@ -48,13 +57,6 @@ export async function createTask(_prevState: unknown, formData: FormData) {
   const parentTaskId = (formData.get("parent_task_id") as string) || null;
 
   // Determine first status for this list
-  const { data: list } = await supabase
-    .from("workspace_lists")
-    .select("folder_id, status_override")
-    .eq("id", listId)
-    .single();
-
-  if (!list) return { error: "List not found" };
 
   let firstStatusId: string | null = null;
 
@@ -346,11 +348,18 @@ export async function updateTaskStatus(taskId: string, statusId: string) {
   } = await supabase.auth.getUser();
   if (!user) return { error: "Not authenticated" };
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("first_name, last_name")
-    .eq("id", user.id)
-    .single();
+  const [{ data: profile }, { data: folderStatus }] = await Promise.all([
+    supabase
+      .from("profiles")
+      .select("first_name, last_name")
+      .eq("id", user.id)
+      .single(),
+    supabase
+      .from("workspace_folder_statuses")
+      .select("name, requires_approval, is_done")
+      .eq("id", statusId)
+      .single(),
+  ]);
 
   const userName =
     [profile?.first_name, profile?.last_name].filter(Boolean).join(" ") || "Someone";
@@ -359,12 +368,6 @@ export async function updateTaskStatus(taskId: string, statusId: string) {
   let statusName: string | undefined;
   let requiresApproval = false;
   let isDone = false;
-
-  const { data: folderStatus } = await supabase
-    .from("workspace_folder_statuses")
-    .select("name, requires_approval, is_done")
-    .eq("id", statusId)
-    .single();
 
   if (folderStatus) {
     statusName = folderStatus.name;
