@@ -6,6 +6,7 @@ import { getTasks } from "@/lib/actions/workspace-tasks";
 import { getListTemplates } from "@/lib/actions/workspace-templates";
 import { FolderSettingsDialog } from "@/components/workspace/folder-settings-dialog";
 import { TaskCreateDialog } from "@/components/workspace/task-create-dialog";
+import { ListCreateDialog } from "@/components/workspace/list-create-dialog";
 import { FolderViewClient } from "@/components/workspace/folder-view-client";
 import type { RoleName } from "@/types";
 
@@ -88,8 +89,6 @@ export default async function FolderViewPage({ params, searchParams }: PageProps
 
   const activeView = (viewParam === "kanban" ? "kanban" : "list") as "list" | "kanban";
 
-  void listTemplates; // available if needed
-
   return (
     <div className="flex flex-col h-full overflow-hidden">
       {/* Header */}
@@ -100,6 +99,7 @@ export default async function FolderViewPage({ params, searchParams }: PageProps
             : folder.name}
         </h1>
         <div className="flex items-center gap-2">
+          <ListCreateDialog folderId={folderId} templates={listTemplates} />
           {defaultListId && (
             <TaskCreateDialog
               listId={defaultListId}
